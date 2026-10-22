@@ -1,0 +1,33 @@
+name: Checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Initialize test dependencies
+        run: git submodule update --init external/sdrplusplus external/radio-firmware-images
+      - name: Python environment
+        run: |
+          python3 -m venv .venv
+          .venv/bin/pip install -r host/requirements.txt
+      - name: Protocol, driver, installer and regression tests
+        run: .venv/bin/python tools/test.py
+  firmware:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi libusb-1.0-0-dev pkg-config bison flex
+          git submodule update --init external/pico-sdk external/picotool external/binutils
+          git -C external/pico-sdk submodule update --init lib/tinyusb
+      - name: Unbound Pico firmware
+        run: python3 tools/build_pico.py
+      - name: ARC extension
+        run: |
+          python3 tools/build_extension.py
+          printf '%s  %s\n' 085df4ad21ca8407515199ef5f6716cbfc5afe9dcfab8ca37d4e79c68144313e build/lr1121/stream.bin | sha256sum --check

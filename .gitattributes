@@ -1,0 +1,3 @@
+# Preserve patch context and verbatim upstream notices.
+*.patch -whitespace
+tools/third-party-licenses/* -whitespace

@@ -1,0 +1,15 @@
+[submodule "picotool"]
+	path = external/picotool
+	url = https://github.com/raspberrypi/picotool.git
+[submodule "radio-firmware-images"]
+	path = external/radio-firmware-images
+	url = https://github.com/Lora-net/radio_firmware_images.git
+[submodule "pico-sdk"]
+	path = external/pico-sdk
+	url = https://github.com/raspberrypi/pico-sdk.git
+[submodule "sdrplusplus"]
+	path = external/sdrplusplus
+	url = https://github.com/AlexandreRouma/SDRPlusPlus.git
+[submodule "binutils"]
+	path = external/binutils
+	url = https://sourceware.org/git/binutils-gdb.git

@@ -1,0 +1,322 @@
+{
+  "LF": {
+    "curve": [
+      {
+        "offset_hz": -239968.96642988728,
+        "relative_db": -24.728243887733132,
+        "purity": 0.9515203065642064,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -199991.03325379698,
+        "relative_db": -16.45586592000686,
+        "purity": 0.9893499458383136,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -150013.50999084738,
+        "relative_db": -8.791564428609318,
+        "purity": 0.9975138158852511,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -120032.74976448694,
+        "relative_db": -5.4080522059653795,
+        "purity": 0.9987000218256329,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -100050.0269116029,
+        "relative_db": -3.722973714599936,
+        "purity": 0.9988960921905801,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -90083.12032734472,
+        "relative_db": -2.7964987779423724,
+        "purity": 0.9991317773026632,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -80098.39482247496,
+        "relative_db": -2.1591905022743636,
+        "purity": 0.9992015295383248,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -60111.075543450395,
+        "relative_db": -1.304565115549632,
+        "purity": 0.9991641110623422,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -40122.721280872414,
+        "relative_db": -0.4929306841353843,
+        "purity": 0.9992028639870401,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -20132.515690790748,
+        "relative_db": 0.20149087391246945,
+        "purity": 0.9996066929666477,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -5153.998688058245,
+        "relative_db": 0.2945721561381053,
+        "purity": 0.9995838657691614,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 4837.940762198113,
+        "relative_db": 0.2744570551752124,
+        "purity": 0.9995409400972108,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 19828.29820794606,
+        "relative_db": -0.19225524668984736,
+        "purity": 0.9991687609366131,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 39821.649825663524,
+        "relative_db": -0.4516025751418331,
+        "purity": 0.9993898175367747,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 59814.685047341474,
+        "relative_db": -1.3887543419759374,
+        "purity": 0.9991414426134698,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 79801.62484482206,
+        "relative_db": -2.6848814601417588,
+        "purity": 0.9987814986277511,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 89793.0840053162,
+        "relative_db": -3.594622789681339,
+        "purity": 0.9986339836904395,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 99788.97689233955,
+        "relative_db": -4.219239070958278,
+        "purity": 0.9984998103891294,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 119782.82479028143,
+        "relative_db": -5.970808780549089,
+        "purity": 0.9983735632999803,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 149777.33988755516,
+        "relative_db": -9.455362984349753,
+        "purity": 0.9972957921115564,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 199767.12466824942,
+        "relative_db": -17.385888505474266,
+        "purity": 0.9876904184688052,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 239764.22761184623,
+        "relative_db": -25.660661578995967,
+        "purity": 0.9453116178312193,
+        "limit_components": 0
+      }
+    ],
+    "thresholds": {
+      "-1": {
+        "crossings_hz": [
+          -52610.46296467978,
+          51521.06652495221
+        ],
+        "full_width_hz": 104131.529489632
+      },
+      "-3": {
+        "crossings_hz": [
+          -92272.36214034849,
+          83262.49214795053
+        ],
+        "full_width_hz": 175534.85428829902
+      },
+      "-6": {
+        "crossings_hz": [
+          -125277.90441789827,
+          120034.0983883713
+        ],
+        "full_width_hz": 245312.00280626956
+      }
+    },
+    "reference_peak_to_peak_db": 0.2759004256039444
+  },
+  "HF": {
+    "curve": [
+      {
+        "offset_hz": -243753.05519658473,
+        "relative_db": -25.586831530765203,
+        "purity": 0.8913119952595789,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -203760.27217084498,
+        "relative_db": -17.22317006555086,
+        "purity": 0.976558033143967,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -153768.61668219438,
+        "relative_db": -9.436285792644137,
+        "purity": 0.9920296737660329,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -123776.56702716442,
+        "relative_db": -5.978891794044975,
+        "purity": 0.9956688515835238,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -103780.89370424006,
+        "relative_db": -4.1313259484642435,
+        "purity": 0.9970293837523321,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -93788.34067367153,
+        "relative_db": -3.327785982264688,
+        "purity": 0.9975075435937933,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -83792.25360971966,
+        "relative_db": -2.6422707060549344,
+        "purity": 0.9981861204093935,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -63795.460233887614,
+        "relative_db": -1.4718336912071508,
+        "purity": 0.9987073777950912,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -43797.83042072304,
+        "relative_db": -0.6624012584314043,
+        "purity": 0.9987754663790661,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -23799.635072135807,
+        "relative_db": -0.13192818523018432,
+        "purity": 0.9989100951155153,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": -8806.619572274767,
+        "relative_db": 0.0205943495490174,
+        "purity": 0.9989374615861205,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 1194.0563265363078,
+        "relative_db": 0.013297656131358209,
+        "purity": 0.9989091066558559,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 16191.366582458986,
+        "relative_db": -0.08462258786256503,
+        "purity": 0.9988434142882671,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 36190.64614689932,
+        "relative_db": -0.5642706033920067,
+        "purity": 0.998655283605363,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 56188.21328650011,
+        "relative_db": -1.340631627735867,
+        "purity": 0.9987461031075624,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 76188.34957805836,
+        "relative_db": -2.4461901823559375,
+        "purity": 0.9983882913637904,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 86185.50829358083,
+        "relative_db": -3.1423334905670854,
+        "purity": 0.9983501750122002,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 96185.23663686021,
+        "relative_db": -3.906894577274636,
+        "purity": 0.9981967902202107,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 116184.84252788125,
+        "relative_db": -5.683212616199972,
+        "purity": 0.9976078626175471,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 146185.24485602265,
+        "relative_db": -9.044960353755796,
+        "purity": 0.9957347222701505,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 196184.5316724388,
+        "relative_db": -16.670748508400695,
+        "purity": 0.9821896634219915,
+        "limit_components": 0
+      },
+      {
+        "offset_hz": 236182.84152142704,
+        "relative_db": -24.779985255246654,
+        "purity": 0.9095367879063637,
+        "limit_components": 0
+      }
+    ],
+    "thresholds": {
+      "-1": {
+        "crossings_hz": [
+          -52138.45823091286,
+          47414.19754907115
+        ],
+        "full_width_hz": 99552.65577998401
+      },
+      "-3": {
+        "crossings_hz": [
+          -89008.61171536567,
+          84141.48879508142
+        ],
+        "full_width_hz": 173150.10051044708
+      },
+      "-6": {
+        "crossings_hz": [
+          -123959.67556538373,
+          119011.86873817921
+        ],
+        "full_width_hz": 242971.54430356296
+      }
+    },
+    "reference_peak_to_peak_db": 0.03771147599877461
+  }
+}

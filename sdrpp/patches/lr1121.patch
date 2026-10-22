@@ -1,0 +1,248 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 5e3163a..f2f9d8f 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -415,3 +415,8 @@ configure_file(${CMAKE_SOURCE_DIR}/cmake_uninstall.cmake ${CMAKE_CURRENT_BINARY_
+ add_custom_target(uninstall ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+ 
+ # Create headers target
++
++option(OPT_BUILD_LR1121_SOURCE "Build the Pico / LR1121 source" ON)
++if(OPT_BUILD_LR1121_SOURCE)
++add_subdirectory(source_modules/lr1121_source)
++endif()
+diff --git a/core/src/core.cpp b/core/src/core.cpp
+index 2b6a89d..dda94e2 100644
+--- a/core/src/core.cpp
++++ b/core/src/core.cpp
+@@ -124,9 +124,9 @@ int sdrpp_main(int argc, char* argv[]) {
+     defConfig["fastFFT"] = false;
+     defConfig["fftHeight"] = 300;
+     defConfig["fftRate"] = 20;
+-    defConfig["fftSize"] = 65536;
++    defConfig["fftSize"] = 8192;
+     defConfig["fftWindow"] = 2;
+-    defConfig["frequency"] = 100000000.0;
++    defConfig["frequency"] = 2440000000.0;
+     defConfig["fullWaterfallUpdate"] = false;
+     defConfig["max"] = 0.0;
+     defConfig["maximized"] = false;
+@@ -163,66 +163,11 @@ int sdrpp_main(int argc, char* argv[]) {
+     defConfig["min"] = -120.0;
+ 
+     // Module instances
+-    defConfig["moduleInstances"]["Airspy Source"]["module"] = "airspy_source";
+-    defConfig["moduleInstances"]["Airspy Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["AirspyHF+ Source"]["module"] = "airspyhf_source";
+-    defConfig["moduleInstances"]["AirspyHF+ Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Audio Source"]["module"] = "audio_source";
+-    defConfig["moduleInstances"]["Audio Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["BladeRF Source"]["module"] = "bladerf_source";
+-    defConfig["moduleInstances"]["BladeRF Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Dragon Labs Source"]["module"] = "dragonlabs_source";
+-    defConfig["moduleInstances"]["Dragon Labs Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["File Source"]["module"] = "file_source";
+-    defConfig["moduleInstances"]["File Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["FobosSDR Source"]["module"] = "fobossdr_source";
+-    defConfig["moduleInstances"]["FobosSDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["HackRF Source"]["module"] = "hackrf_source";
+-    defConfig["moduleInstances"]["HackRF Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Harogic Source"]["module"] = "harogic_source";
+-    defConfig["moduleInstances"]["Harogic Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Hermes Source"]["module"] = "hermes_source";
+-    defConfig["moduleInstances"]["Hermes Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["HydraSDR Source"]["module"] = "hydrasdr_source";
+-    defConfig["moduleInstances"]["HydraSDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["LimeSDR Source"]["module"] = "limesdr_source";
+-    defConfig["moduleInstances"]["LimeSDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Network Source"]["module"] = "network_source";
+-    defConfig["moduleInstances"]["Network Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["PerseusSDR Source"]["module"] = "perseus_source";
+-    defConfig["moduleInstances"]["PerseusSDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["PlutoSDR Source"]["module"] = "plutosdr_source";
+-    defConfig["moduleInstances"]["PlutoSDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["RFNM Source"]["module"] = "rfnm_source";
+-    defConfig["moduleInstances"]["RFNM Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["RFspace Source"]["module"] = "rfspace_source";
+-    defConfig["moduleInstances"]["RFspace Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["RTL-SDR Source"]["module"] = "rtl_sdr_source";
+-    defConfig["moduleInstances"]["RTL-SDR Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["RTL-TCP Source"]["module"] = "rtl_tcp_source";
+-    defConfig["moduleInstances"]["RTL-TCP Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["SDRplay Source"]["module"] = "sdrplay_source";
+-    defConfig["moduleInstances"]["SDRplay Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["SDR++ Server Source"]["module"] = "sdrpp_server_source";
+-    defConfig["moduleInstances"]["SDR++ Server Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["Spectran HTTP Source"]["module"] = "spectran_http_source";
+-    defConfig["moduleInstances"]["Spectran HTTP Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["SpyServer Source"]["module"] = "spyserver_source";
+-    defConfig["moduleInstances"]["SpyServer Source"]["enabled"] = true;
+-    defConfig["moduleInstances"]["USRP Source"]["module"] = "usrp_source";
+-    defConfig["moduleInstances"]["USRP Source"]["enabled"] = true;
+-
+-    defConfig["moduleInstances"]["Audio Sink"] = "audio_sink";
+-    defConfig["moduleInstances"]["Network Sink"] = "network_sink";
+-
++    defConfig["moduleInstances"]["LR1121 Source"] = {{"module", "lr1121_source"}, {"enabled", true}};
+     defConfig["moduleInstances"]["Radio"] = "radio";
+-
++    defConfig["moduleInstances"]["Audio Sink"] = "audio_sink";
+     defConfig["moduleInstances"]["Frequency Manager"] = "frequency_manager";
+     defConfig["moduleInstances"]["Recorder"] = "recorder";
+-    defConfig["moduleInstances"]["Rigctl Server"] = "rigctl_server";
+-    // defConfig["moduleInstances"]["Rigctl Client"] = "rigctl_client";
+-    // TODO: Enable rigctl_client when ready
+-    // defConfig["moduleInstances"]["Scanner"] = "scanner";
+     // TODO: Enable scanner when ready
+ 
+ 
+@@ -247,7 +192,7 @@ int sdrpp_main(int argc, char* argv[]) {
+     defConfig["manualOffset"] = 0.0;
+     defConfig["showMenu"] = true;
+     defConfig["showWaterfall"] = true;
+-    defConfig["source"] = "";
++    defConfig["source"] = "LR1121";
+     defConfig["decimation"] = 1;
+     defConfig["iqCorrection"] = false;
+     defConfig["invertIQ"] = false;
+diff --git a/core/src/gui/widgets/waterfall.cpp b/core/src/gui/widgets/waterfall.cpp
+index f255690..58e023f 100644
+--- a/core/src/gui/widgets/waterfall.cpp
++++ b/core/src/gui/widgets/waterfall.cpp
+@@ -1,4 +1,5 @@
+ #include <gui/widgets/waterfall.h>
++#include <gui/widgets/fft_signal_info.h>
+ #include <imgui.h>
+ #include <imgui_internal.h>
+ #include <imutils.h>
+@@ -556,45 +557,10 @@ namespace ImGui {
+     }
+ 
+     bool WaterFall::calculateVFOSignalInfo(float* fftLine, WaterfallVFO* _vfo, float& strength, float& snr) {
+-        if (fftLine == NULL || fftLines <= 0) { return false; }
+-
+-        // Calculate FFT index data
+-        double vfoMinSizeFreq = _vfo->centerOffset - _vfo->bandwidth;
+-        double vfoMinFreq = _vfo->centerOffset - (_vfo->bandwidth / 2.0);
+-        double vfoMaxFreq = _vfo->centerOffset + (_vfo->bandwidth / 2.0);
+-        double vfoMaxSizeFreq = _vfo->centerOffset + _vfo->bandwidth;
+-        int vfoMinSideOffset = std::clamp<int>(((vfoMinSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
+-        int vfoMinOffset = std::clamp<int>(((vfoMinFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
+-        int vfoMaxOffset = std::clamp<int>(((vfoMaxFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
+-        int vfoMaxSideOffset = std::clamp<int>(((vfoMaxSizeFreq / (wholeBandwidth / 2.0)) * (double)(rawFFTSize / 2)) + (rawFFTSize / 2), 0, rawFFTSize);
+-
+-        double avg = 0;
+-        float max = -INFINITY;
+-        int avgCount = 0;
+-
+-        // Calculate Left average
+-        for (int i = vfoMinSideOffset; i < vfoMinOffset; i++) {
+-            avg += fftLine[i];
+-            avgCount++;
+-        }
+-
+-        // Calculate Right average
+-        for (int i = vfoMaxOffset + 1; i < vfoMaxSideOffset; i++) {
+-            avg += fftLine[i];
+-            avgCount++;
+-        }
+-
+-        avg /= (double)(avgCount);
+-
+-        // Calculate max
+-        for (int i = vfoMinOffset; i <= vfoMaxOffset; i++) {
+-            if (fftLine[i] > max) { max = fftLine[i]; }
+-        }
+-
+-        strength = max;
+-        snr = max - avg;
+-
+-        return true;
++        strength = snr = 0.0f;
++        if (!_vfo || fftLines <= 0) { return false; }
++        return calculateFFTSignalInfo(fftLine, rawFFTSize, wholeBandwidth,
++            _vfo->centerOffset, _vfo->bandwidth, strength, snr);
+     }
+ 
+     void WaterFall::updateWaterfallFb() {
+@@ -923,8 +889,8 @@ namespace ImGui {
+             float dummy;
+             if (snrSmoothing) {
+                 float newSNR = 0.0f;
+-                calculateVFOSignalInfo(waterfallVisible ? &rawFFTs[currentFFTLine * rawFFTSize] : rawFFTs, vfos[selectedVFO], dummy, newSNR);
+-                selectedVFOSNR = (snrSmoothingBeta*selectedVFOSNR) + (snrSmoothingAlpha*newSNR);
++                bool valid = calculateVFOSignalInfo(waterfallVisible ? &rawFFTs[currentFFTLine * rawFFTSize] : rawFFTs, vfos[selectedVFO], dummy, newSNR);
++                selectedVFOSNR = valid ? (snrSmoothingBeta*selectedVFOSNR) + (snrSmoothingAlpha*newSNR) : 0.0f;
+             }
+             else {
+                 calculateVFOSignalInfo(waterfallVisible ? &rawFFTs[currentFFTLine * rawFFTSize] : rawFFTs, vfos[selectedVFO], dummy, selectedVFOSNR);
+diff --git a/decoder_modules/radio/src/radio_module.h b/decoder_modules/radio/src/radio_module.h
+index 52016b4..6873ab3 100644
+--- a/decoder_modules/radio/src/radio_module.h
++++ b/decoder_modules/radio/src/radio_module.h
+@@ -70,7 +70,7 @@ public:
+         bool created = false;
+         config.acquire();
+         if (!config.conf.contains(name)) {
+-            config.conf[name]["selectedDemodId"] = 1;
++            config.conf[name]["selectedDemodId"] = 0;
+             created = true;
+         }
+         selectedDemodID = config.conf[name]["selectedDemodId"];
+diff --git a/core/src/gui/widgets/fft_signal_info.h b/core/src/gui/widgets/fft_signal_info.h
+new file mode 100644
+index 0000000..d94aac5
+--- /dev/null
++++ b/core/src/gui/widgets/fft_signal_info.h
+@@ -0,0 +1,51 @@
++#pragma once
++#include <algorithm>
++#include <cmath>
++#include <limits>
++
++namespace ImGui {
++    // Pure FFT-line measurement, shared by the meter and VFO tooltip.
++    // False means that signal/noise cannot both be estimated from this span.
++    inline bool calculateFFTSignalInfo(const float* line, int size, double span,
++        double center, double bandwidth, float& strength, float& snr) {
++        strength = snr = 0.0f;
++        if (!line || size <= 0 || !std::isfinite(span) || span <= 0.0 ||
++            !std::isfinite(center) || !std::isfinite(bandwidth) || bandwidth <= 0.0) {
++            return false;
++        }
++        double low = center - bandwidth / 2.0;
++        double high = center + bandwidth / 2.0;
++        if (low >= span / 2.0 || high < -span / 2.0) { return false; }
++
++        // Clamp as floating point BEFORE converting to an index. Boundaries
++        // may equal size, but dereferenced indices must always be smaller.
++        auto boundary = [=](double frequency) {
++            return static_cast<int>(std::clamp((frequency / span + 0.5) * size, 0.0, double(size)));
++        };
++        int signalBegin = boundary(low);
++        int signalEnd = std::min(boundary(high), size - 1) + 1;
++        int leftBegin = boundary(center - bandwidth);
++        int rightEnd = boundary(center + bandwidth);
++        if (signalBegin >= signalEnd) { return false; }
++
++        double noiseSum = 0.0;
++        int noiseCount = 0;
++        for (int i = leftBegin; i < signalBegin; ++i) {
++            noiseSum += line[i];
++            ++noiseCount;
++        }
++        for (int i = signalEnd; i < rightEnd; ++i) {
++            noiseSum += line[i];
++            ++noiseCount;
++        }
++        if (noiseCount == 0) { return false; }
++
++        float peak = -std::numeric_limits<float>::infinity();
++        for (int i = signalBegin; i < signalEnd; ++i) { peak = std::max(peak, line[i]); }
++        float estimate = peak - noiseSum / noiseCount;
++        if (!std::isfinite(peak) || !std::isfinite(estimate)) { return false; }
++        strength = peak;
++        snr = estimate;
++        return true;
++    }
++}

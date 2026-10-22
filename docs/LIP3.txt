@@ -1,0 +1,34 @@
+LIP3 version 1, SDR++ source 1.4 / bridge 1.0.7
+
+All header integers are little endian. Header: 44 bytes.
+0 magic LIP3; 4 version=1; 5 kind=1(data)/2(end); 6 flags u16;
+8 stream_id u32; 12 first_bank_sequence u32; 16 sequence*125 u32 (wrap);
+20 complex_sample_count u32; 24 payload_bytes u32; 28 nominal_rate=500000 u32;
+32 timestamp_us u32; 36 payload_crc32 u32; 40 header_crc32 u32 (bytes 0..39).
+CRC is standard reflected CRC-32 (polynomial 0xedb88320, initial/final xor
+0xffffffff). It covers TRANSMITTED payload bytes before unwhitening.
+
+Data frames group 1..16 banks, each 125 complex samples. Each bank is 251 bytes:
+unsigned shift byte (0..16), then 250 signed two's-complement int8 values,
+I0,Q0,I1,Q1,... . Float amplitude = int8 * 2^(shift-22), preserving the
+signed-23 raw sample scale across shift changes. Firmware saturates the
+right-shifted raw sample to -128..127; it never wraps a clipped value.
+
+Data whitening: x=(first_bank_sequence XOR 0x9e3779b9) OR 1; for each next
+four payload bytes, update uint32 x with x^=x<<13; x^=x>>17; x^=x<<5;
+XOR those bytes with x's bytes in little-endian order. Truncate the last word
+if needed. Reset x for each USB frame, never each bank. Entire data payload,
+including shift bytes, is whitened. Headers and terminal payloads are plain.
+
+Terminal payload: nine u32 values: produced banks, sent banks, queue peak,
+read operations, maximum bank time us, actual SPI Hz, elapsed us, lost marker,
+requested banks. End flags 4 indicate an intentional host Stop. Any error
+flags, sequence gap, stream/rate mismatch, invalid scale/dimensions or bad CRC
+terminate reception. Sequence is per BANK, not per USB frame. Counters detect
+transport and ownership failures; reference-tone phase tests additionally
+check acquisition continuity, which transport CRC alone cannot establish.
+
+Pico command: packed 500000 BLOCKS 8 18. BLOCKS=0 is continuous until ETX.
+Configuration/patch activation is owned by the native Device class, which
+verifies module UID, firmware identity, extension marker, rate and DMA layout.
+Do not send ordinary ASCII commands while a binary stream is active.

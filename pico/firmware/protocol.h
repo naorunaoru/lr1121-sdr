@@ -1,0 +1,32 @@
+#ifndef BRIDGE_PROTOCOL_H
+#define BRIDGE_PROTOCOL_H
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define BRIDGE_MAX_BYTES 4096u
+#define BRIDGE_LINE_SIZE (2u * BRIDGE_MAX_BYTES + 128u)
+#define BRIDGE_MAX_TIMEOUT_MS 10000u
+
+typedef enum {
+    CMD_INFO, CMD_PINS, CMD_RESET, CMD_SPEED, CMD_XFER,
+    CMD_READ, CMD_WRITE, CMD_WAIT, CMD_BOOTSEL, CMD_BENCH, CMD_STREAM, CMD_STREAM2, CMD_PACKED
+} command_t;
+
+typedef struct {
+    uint32_t id;
+    command_t command;
+    uint32_t timeout_ms;
+    uint32_t speed_hz;
+    uint32_t iterations;
+    uint32_t guard_us;
+    uint32_t pause_ms;
+    uint32_t sample_rate;
+    size_t tx_len;
+    size_t read_len;
+    uint8_t tx[BRIDGE_MAX_BYTES];
+} request_t;
+
+// Mutates line. No hardware is touched unless the entire request is valid.
+bool parse_request(char *line, request_t *req, const char **error);
+#endif
