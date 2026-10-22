@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "stream_queue.h"
 #include <stdint.h>
 #include <string.h>

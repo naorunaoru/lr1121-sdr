@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """LR1121 1.3 application-only installer and FIFO1 extension builder.
 
 CBC oracle construction adapted from radioegor146/lr-semtech-research;

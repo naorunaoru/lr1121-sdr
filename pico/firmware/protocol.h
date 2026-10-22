@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #ifndef BRIDGE_PROTOCOL_H
 #define BRIDGE_PROTOCOL_H
 #include <stdbool.h>

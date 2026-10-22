@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "stream.h"
 #include "stream_queue.h"
 #include "stream_format.h"

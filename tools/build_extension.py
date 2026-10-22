@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Build pinned ARC binutils and the CBC-layout-compatible FIFO1 extension."""
 import argparse
 import hashlib

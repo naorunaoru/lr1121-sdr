@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "stream_format.h"
 #include <string.h>
 static const uint32_t crc_table[256] = {

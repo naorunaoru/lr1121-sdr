@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-only
 cmake_minimum_required(VERSION 3.13)
 project(lr1121_source)
 set(SRC src/main.cpp src/device.cpp)

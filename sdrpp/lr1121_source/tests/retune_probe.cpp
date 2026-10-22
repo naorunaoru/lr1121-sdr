@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
 // Hardware validation driver. One JSON request per line; one result per line.
 // Owns the Pico exclusively until EOF, then resets it to standby.
 #include "device.h"

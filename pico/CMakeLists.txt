@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 cmake_minimum_required(VERSION 3.13)
 if(NOT PICO_SDK_PATH)
     if(DEFINED ENV{PICO_SDK_PATH})

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Analyze native CF32 probe output; phase residuals assume a dominant CW."""
 import argparse
 import json

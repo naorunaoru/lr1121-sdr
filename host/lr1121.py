@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Core1121-XF board setup and receive-only 2.4 GHz RSSI helpers.
 
 Board constants come from Waveshare's Core1121_XF_Demo Pico example;

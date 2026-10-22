@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #ifndef RADIO_STREAM_H
 #define RADIO_STREAM_H
 #include <stdint.h>

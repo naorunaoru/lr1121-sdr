@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "../firmware/stream_format.h"
 #include <assert.h>
 #include <stdio.h>

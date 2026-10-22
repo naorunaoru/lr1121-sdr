@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Bundle the dedicated arm64 build; never removes a pre-existing app directory."""
 import argparse,hashlib,json,os,plistlib,re,shutil,subprocess
 from pathlib import Path
@@ -9,6 +10,12 @@ contents=app/'Contents';mac=contents/'MacOS';libs=contents/'Frameworks';plugins=
 for d in (mac,libs,plugins):d.mkdir(parents=True)
 shutil.copytree(root/'root/res',res)
 shutil.copy2(root/'license',res/'SDRPlusPlus-LICENSE.txt')
+project=Path(__file__).resolve().parents[1]
+for source,name in [('LICENSE','LR1121-MIT-LICENSE.txt'),
+                    ('sdrpp/LICENSE','LR1121-SDRPP-GPL3-LICENSE.txt'),
+                    ('THIRD_PARTY_NOTICES.md','THIRD_PARTY_NOTICES.md'),
+                    ('docs/licensing.md','LR1121-LICENSING.md')]:
+ shutil.copy2(project/source,res/name)
 shutil.copytree(Path(__file__).resolve().parent/'third-party-licenses',res/'ThirdPartyLicenses')
 plist={'CFBundleName':'SDR++ LR1121','CFBundleDisplayName':'SDR++ LR1121','CFBundleIdentifier':'local.lr1121.sdrplusplus','CFBundleVersion':'1.4.0','CFBundleShortVersionString':'1.4.0','CFBundleExecutable':'launch','CFBundlePackageType':'APPL','NSHighResolutionCapable':True,'LSMinimumSystemVersion':'27.0'}
 (contents/'Info.plist').write_bytes(plistlib.dumps(plist))

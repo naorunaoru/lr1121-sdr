@@ -61,7 +61,10 @@ LR1121 custom-code work builds on
 [lr2021-sdr](https://github.com/SAMS0N1TE/lr2021-sdr) motivated the investigation;
 the LR1121 capture implementation is separate.
 
-Project code is GPL-3.0; upstream components retain their licenses. See
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Semtech firmware remains in its
-licensed upstream submodule. Generated images, device bindings, raw captures,
-USB logs and local SDR++ configuration are excluded from Git.
+Independent components (`pico/`, `lr1121/`, `host/`, and project-owned build/tools
+code) use [MIT](LICENSE). The entire `sdrpp/` portion, including its source module,
+core patches and tests, remains [GPLv3](sdrpp/LICENSE). Project documentation is
+MIT unless it contains separately licensed upstream material. See the precise
+[license scope](docs/licensing.md) and [third-party notices](THIRD_PARTY_NOTICES.md).
+External dependencies and Semtech firmware retain their own licenses. Generated
+images, device bindings, raw captures, USB logs and local SDR++ configuration are excluded from Git.

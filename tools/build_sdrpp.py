@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Stage and build the pinned SDR++ tree with only the LR1121 receiver modules."""
 import argparse
 from pathlib import Path

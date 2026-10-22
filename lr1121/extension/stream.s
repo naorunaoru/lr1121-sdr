@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 .include "pack.s"
 .org 0x200
 service:

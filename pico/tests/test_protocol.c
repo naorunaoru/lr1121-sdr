@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #include "../firmware/protocol.h"
 #include <assert.h>
 #include <stdio.h>

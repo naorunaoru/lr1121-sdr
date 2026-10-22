@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #ifndef LR1121_STREAM_QUEUE_H
 #define LR1121_STREAM_QUEUE_H
 #include "pico/util/queue.h"

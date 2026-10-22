@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Bounded USB CLI reference carriers; stock Flipper firmware and BLE Full.
 See docs/validation.md. No Flipper firmware flashing is performed.
 """

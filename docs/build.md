@@ -87,8 +87,9 @@ changing either. Module-only changes can reuse the existing directory.
 
 Only LR1121 source, Radio, Audio Sink, Frequency Manager and Recorder are enabled.
 The macOS bundle is `build/SDR++ LR1121.app`, with copied shared libraries and
-ad-hoc signatures. Its launcher stores settings in `build/config/` alongside the
-app. Bundle creation refuses to replace an existing app: move the old bundle
+ad-hoc signatures. It includes the MIT and GPLv3 project licenses, license scope,
+and third-party notices; see [licensing](licensing.md). Its launcher stores settings
+in `build/config/` alongside the app. Bundle creation refuses to replace an existing app: move the old bundle
 aside or choose a fresh build directory. Nothing is installed system-wide.
 
 The command-line receiver is

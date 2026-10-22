@@ -1,8 +1,10 @@
 # Third-party notices
 
-Original project code is distributed under GPL-3.0 (see `LICENSE`). Copies of
-upstream components retain their own notices and terms; the root license does not
-relicense them.
+Independent project code and documentation use MIT (see `LICENSE`). All project
+code, patches and tests under `sdrpp/` use GPL-3.0-only (see `sdrpp/LICENSE`).
+[License scope](docs/licensing.md) lists the directory boundaries. Copies of
+upstream components retain their own notices and terms; neither project license
+relicenses them.
 
 - **SDR++**, Alexandre Rouma and contributors: GPL-3.0. Pinned source and license
   in `external/sdrplusplus`. The module and core patch build against that revision.
@@ -13,7 +15,7 @@ relicense them.
   Only the build tools are used; no tool binaries are checked into this repository.
 - **Semtech LR1121 firmware**: the terms beside the 0x0103 image in
   `external/radio-firmware-images/lr1121/transceiver/` apply to that binary and
-  its redistribution. It is not covered by this repository's GPL grant.
+  its redistribution. It is not covered by either project license grant.
 - **radioegor146/lr-semtech-research**: MIT, copyright 2026 radioegor146.
   The CBC-oracle image construction in `lr1121/install.py` is adapted from that
   research. The complete notice is retained at
@@ -22,7 +24,8 @@ relicense them.
 - **Waveshare Core1121-XF demo**: board setup constants informed the TCXO and RF
   switch configuration; the demo is not bundled or a build dependency.
 
-The macOS bundler includes the SDR++ license and notices for the dynamically
+The macOS bundler includes both project licenses, this notice, the license-scope
+document, the upstream SDR++ license and notices for the dynamically
 linked FFTW, VOLK, GLFW, PortAudio, ORC, cpu_features and zstd libraries from
 `tools/third-party-licenses/`. Those libraries are supplied by the host package
 manager, not source-pinned here. Anyone distributing a binary must also meet the

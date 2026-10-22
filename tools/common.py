@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 """Shared build helpers; upstream checkouts remain unmodified."""
 import hashlib
 import json

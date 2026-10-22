@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #ifndef LR1121_VERIFIED_UID
 #define LR1121_VERIFIED_UID ""
 #endif

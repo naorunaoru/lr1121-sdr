@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 #ifndef STREAM_FORMAT_H
 #define STREAM_FORMAT_H
 #include <stdbool.h>

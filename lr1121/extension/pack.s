@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 .section .text
 .global _start
 /* 16 banks, 125 complex pairs each at 2048-byte strides; raw signed-23.

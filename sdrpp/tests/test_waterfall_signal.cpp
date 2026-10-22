@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-3.0-only */
 #include <gui/widgets/fft_signal_info.h>
 #include <cassert>
 #include <iostream>

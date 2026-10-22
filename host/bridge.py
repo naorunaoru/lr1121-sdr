@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Mac/Linux/Windows client for the native Pico LR1121 SPI bridge.
 
 Python runs on the host computer only. The Pico runs Pico SDK C firmware.

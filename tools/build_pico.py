@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: MIT
 """Build pinned picotool and the Pico bridge, optionally bound to a verified LR1121."""
 import argparse
 from pathlib import Path
