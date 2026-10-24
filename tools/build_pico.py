@@ -10,6 +10,7 @@ parser.add_argument('--build', type=Path, default=ROOT / 'build')
 parser.add_argument('--binding', type=Path)
 parser.add_argument('--toolchain', type=Path, help='Arm GNU root; omit when arm-none-eabi-gcc is on PATH')
 parser.add_argument('--jobs', type=int, default=4)
+parser.add_argument('--tx', action='store_true', help='Build experimental TX-only firmware into pico-tx')
 args = parser.parse_args()
 build = args.build.resolve()
 sdk = ROOT / 'external/pico-sdk'
@@ -21,10 +22,12 @@ run(
 )
 run('cmake', '--build', build / 'picotool', '-j', args.jobs)
 run('cmake', '--install', build / 'picotool')
+pico_build = build / ('pico-tx' if args.tx else 'pico')
 command = [
-    'cmake', '-S', ROOT / 'pico', '-B', build / 'pico',
+    'cmake', '-S', ROOT / 'pico', '-B', pico_build,
     '-DPICO_SDK_PATH=' + str(sdk), '-Dpicotool_DIR=' + str(prefix / 'picotool'),
     '-DCMAKE_BUILD_TYPE=Release',
+    '-DLR1121_EXPERIMENTAL_TX=' + ('ON' if args.tx else 'OFF'),
 ]
 if args.binding:
     command += ['-C', args.binding.resolve()]
@@ -33,4 +36,4 @@ else:
 if args.toolchain:
     command += ['-DPICO_TOOLCHAIN_PATH=' + str(args.toolchain.resolve())]
 run(*command)
-run('cmake', '--build', build / 'pico', '-j', args.jobs)
+run('cmake', '--build', pico_build, '-j', args.jobs)

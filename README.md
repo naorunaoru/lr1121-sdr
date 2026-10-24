@@ -1,7 +1,7 @@
 # LR1121 SDR
 
-Receive-only SDR experiments with a Semtech LR1121, an RP2040 Pico USB/SPI bridge,
-and a native SDR++ source module. Tested with a Waveshare Core1121-XF **HF board
+SDR receive and experimental frequency-playback transmit work with a Semtech LR1121, an RP2040 Pico USB/SPI bridge,
+and a native receive-only SDR++ source module. Tested with a Waveshare Core1121-XF **HF board
 variant** (850–930 MHz matching on its Sub-GHz connector) and an original Pico.
 
 The receiver exposes 62.5, 125, 250 and 500 kS/s complex streams. The two higher
@@ -19,13 +19,25 @@ The extension installer leaves the LR1121 bootloader unchanged.
 about 100 kHz within 1 dB, 173–176 kHz at −3 dB, and 243–245 kHz at −6 dB.
 See [measurements and validation](docs/validation.md).
 
+## Experimental TX
+
+An opt-in Pico profile and ARC player support frequency updates through 250 kHz,
+with [external rate and deviation controls](docs/tx-controls.md).
+Three 12-second 250 kHz streams passed delivery checks with at least 1.916 ms
+refill margin; interrupt jitter remains. See [250 kHz measurements](docs/tx-250k.md).
+Three 15-second 200 kHz runs completed with correct checksums and no player underruns;
+minimum refill margin was 5 ms. Startup reliability, update jitter and spectral
+purity remain unresolved. Center frequency and LP/HP/HF PA power are configurable. The path is separate from
+SDR++ and without independent amplitude control. See [TX build/use](docs/tx.md)
+and [measurements, including the failed startup](docs/tx-measurements.md).
+
 ## Layout
 
-- `pico/`: Pico SDK C firmware, ASCII control bridge and binary USB streaming.
+- `pico/`: Pico SDK C firmware; default receive bridge and opt-in `tx/` profile.
 - `sdrpp/lr1121_source/`: native C++ source, decoder, command-line probes and tests.
 - `sdrpp/patches/`: SDR++ registration, defaults and waterfall bounds fix.
-- `lr1121/`: ARC assembly, linker script, guarded application installer and tests.
-- `host/`: Python bridge, board setup and optional Flipper reference carriers.
+- `lr1121/`: ARC receiver extension, experimental `tx/` player/vectors, installers and tests.
+- `host/`: Python bridge, board setup, TX waveform/player CLI and optional Flipper reference carriers.
 - `tools/`: builds, macOS app packaging and offline checks.
 - `ci/`: optional GitHub Actions workflow template.
 - `external/`: pinned Git submodules; no copied SDK/build trees.

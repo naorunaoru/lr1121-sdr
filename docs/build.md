@@ -72,6 +72,13 @@ SHA-256 `085df4ad21ca8407515199ef5f6716cbfc5afe9dcfab8ca37d4e79c68144313e`.
 The build checks the reserved CBC holes. Binutils documentation generation is
 skipped (`MAKEINFO=true`); the assembler, linker and objcopy are built locally.
 
+## Experimental TX
+
+`python tools/build_tx.py` builds the player with the same pinned ARC tools.
+`python tools/build_pico.py --tx` selects the isolated TX profile and writes
+`build/pico-tx/`; default builds continue to use `build/pico/`. See the complete
+[TX installation and reproduction sequence](tx.md).
+
 ## SDR++
 
 ```sh

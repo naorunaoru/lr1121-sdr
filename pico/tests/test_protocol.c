@@ -15,6 +15,15 @@ static bool parse(const char *s) {
 }
 
 int main(void) {
+    assert(parse("1 guard 100") && req.command == CMD_GUARD && req.timeout_ms == 100);
+    assert(parse("1 guard 2000") && req.timeout_ms == 2000);
+    assert(parse("1 guardstatus") && req.command == CMD_GUARD_STATUS);
+    assert(!parse("1 guard 0"));
+    assert(!parse("1 guard 99"));
+    assert(!parse("1 guard 2001"));
+    assert(!parse("1 guard -1"));
+    assert(!parse("1 guard 4294967296"));
+    assert(!parse("1 guardstatus extra"));
     assert(parse("1 read 1000 4 0101"));
     assert(req.id == 1 && req.command == CMD_READ && req.read_len == 4);
     assert(req.tx_len == 2 && req.tx[0] == 1 && req.tx[1] == 1);

@@ -10,6 +10,8 @@
 #include "pico/bootrom.h"
 #include "pico/version.h"
 #include "hardware/spi.h"
+#include "hardware/watchdog.h"
+#include "hardware/sync.h"
 #include "tusb.h"
 #include "protocol.h"
 #include "stream.h"
@@ -29,6 +31,31 @@ static char line[BRIDGE_LINE_SIZE];
 static uint8_t command_rx[BRIDGE_MAX_BYTES];
 static uint8_t reply[BRIDGE_MAX_BYTES + 1];
 static uint32_t speed_hz;
+static volatile bool guard_armed, guard_expired;
+static alarm_id_t guard_alarm;
+static bool guard_boot_recovery;
+#define GUARD_MAGIC 0x4c524744u
+
+// Independent of USB, SPI, BUSY and the LR1121's event loop. Keep reset low
+// until explicit recovery; the Pico watchdog is a second recovery layer.
+static int64_t guard_trip(alarm_id_t id, void *user) {
+    (void)id; (void)user;
+    gpio_put(PIN_RESET, 0);
+    gpio_put(PIN_CS, 1);
+    guard_expired = true;
+    return 0;
+}
+
+static void guarded_reset_begin(void) {
+    uint32_t irq = save_and_disable_interrupts();
+    gpio_put(PIN_RESET, 0);
+    if (guard_alarm > 0) cancel_alarm(guard_alarm);
+    guard_alarm = 0;
+    watchdog_disable();
+    watchdog_hw->scratch[0] = 0;
+    guard_armed = guard_expired = false;
+    restore_interrupts(irq);
+}
 void packed_stream(uint32_t id,uint32_t blocks,uint32_t pause_ms,uint32_t spi_hz,uint32_t sample_rate,uint32_t bits);
 static uint8_t bench_baseline[256];
 
@@ -47,9 +74,11 @@ static void failure(uint32_t id, const char *error, const char *phase, bool sent
 }
 
 static bool ready(uint32_t timeout_ms) {
+    if (guard_expired) return false;
     if (!timeout_ms) return true; // Only the raw xfer command permits bypass.
     absolute_time_t deadline = make_timeout_time_ms(timeout_ms);
     while (gpio_get(PIN_BUSY)) {
+        if (guard_expired) return false;
         tud_task();
         if (time_reached(deadline)) return false;
         sleep_us(20);
@@ -134,12 +163,42 @@ static void benchmark(void) {
 static void run_request(void) {
     uint64_t start = time_us_64();
     unsigned long id = req.id;
+    if ((guard_expired && req.command != CMD_RESET && req.command != CMD_INFO &&
+         req.command != CMD_PINS && req.command != CMD_GUARD_STATUS) ||
+        (guard_armed && (req.command == CMD_STREAM || req.command == CMD_STREAM2 ||
+                        req.command == CMD_PACKED || req.command == CMD_BENCH ||
+                        req.command == CMD_BOOTSEL))) {
+        failure(req.id, "guard_requires_reset", "guard", false);
+        return;
+    }
     switch (req.command) {
+    case CMD_GUARD:
+        if (guard_armed) {
+            failure(req.id, "guard_already_armed", "guard", false);
+            return;
+        }
+        guard_armed = true;
+        watchdog_hw->scratch[0] = GUARD_MAGIC;
+        watchdog_enable(req.timeout_ms + 1000, false);
+        guard_alarm = add_alarm_in_ms(req.timeout_ms, guard_trip, NULL, true);
+        if (guard_alarm <= 0) {
+            guard_trip(0, NULL);
+            failure(req.id, "guard_alarm_failed", "guard", false);
+            return;
+        }
+        printf("{\"id\":%lu,\"ok\":true,\"armed\":true,\"deadline_ms\":%lu}\n",
+               id, (unsigned long)req.timeout_ms);
+        return;
+    case CMD_GUARD_STATUS:
+        printf("{\"id\":%lu,\"ok\":true,\"armed\":%s,\"expired\":%s,\"reset\":%d,\"boot_recovery\":%s}\n",
+               id, guard_armed ? "true" : "false", guard_expired ? "true" : "false",
+               gpio_get(PIN_RESET), guard_boot_recovery ? "true" : "false");
+        return;
     case CMD_INFO: {
         char serial[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
         pico_get_unique_board_id_string(serial, sizeof(serial));
         printf("{\"id\":%lu,\"ok\":true,\"bridge\":\"lr1121-spi\",\"protocol\":1,"
-               "\"firmware\":\"1.0.7\",\"packed_stream\":\"LIP2\",\"fifo_stream\":\"LIP3\",\"packed_radio_uid\":\"" LR1121_VERIFIED_UID "\",\"sdk\":\"%s\",\"serial\":\"%s\","
+               "\"firmware\":\"1.0.8\",\"reset_guard\":1,\"packed_stream\":\"LIP2\",\"fifo_stream\":\"LIP3\",\"packed_radio_uid\":\"" LR1121_VERIFIED_UID "\",\"sdk\":\"%s\",\"serial\":\"%s\","
                "\"spi_hz\":%lu,\"max_bytes\":%u,\"spi_mode\":0,\"pins\":{"
                "\"sck\":%d,\"mosi\":%d,\"miso\":%d,\"cs\":%d,\"busy\":%d,"
                "\"reset\":%d,\"dio9\":%d}}\n",
@@ -177,7 +236,7 @@ static void run_request(void) {
         return;
     case CMD_RESET:
         gpio_put(PIN_CS, 1);
-        gpio_put(PIN_RESET, 0);
+        guarded_reset_begin();
         sleep_ms(10);
         gpio_put(PIN_RESET, 1);
         sleep_ms(10);
@@ -235,7 +294,13 @@ static void output_pin(uint pin) {
 
 int main(void) {
     output_pin(PIN_CS);
-    output_pin(PIN_RESET);
+    gpio_init(PIN_RESET);
+    gpio_put(PIN_RESET, 0);
+    gpio_set_dir(PIN_RESET, GPIO_OUT);
+    guard_boot_recovery = watchdog_caused_reboot() && watchdog_hw->scratch[0] == GUARD_MAGIC;
+    watchdog_hw->scratch[0] = 0;
+    sleep_ms(10);
+    gpio_put(PIN_RESET, 1);
     gpio_init(PIN_BUSY);
     gpio_set_dir(PIN_BUSY, GPIO_IN);
     gpio_pull_up(PIN_BUSY);

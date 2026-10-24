@@ -1,0 +1,36 @@
+Pico radio reset guard (bridge firmware 1.0.8)
+
+Experimental TX callers can arm an autonomous deadline before SetTx:
+  <id> guard <milliseconds>
+  <id> guardstatus
+
+Deadline range: 100..2000 ms. The deadline cannot be extended or cancelled by
+another guard command. Only a radio reset cancels it; reset is asserted before
+cancellation. Ordinary SDR receive clients do not arm this feature.
+
+At expiry a Pico timer IRQ drives the LR1121 RESET pin low and leaves it low.
+This is independent of host requests, USB connection, LR1121 BUSY and the radio's
+own timeout cleanup. A Pico hardware watchdog is armed for deadline + 1000 ms;
+if not recovered explicitly, it reboots the Pico. Startup pulses LR1121 reset
+before initializing USB. If the timer IRQ cannot execute, watchdog reboot is
+the fallback. This is not a power switch and cannot recover electrical failures.
+
+info advertises reset_guard:1. guardstatus reports armed, expired, reset and
+boot_recovery. boot_recovery remains true for that Pico boot after a guard-related
+watchdog reset; it is not a per-trial event counter. Expired guards reject radio
+commands until reset. Streaming, benchmarking and BOOTSEL are rejected while
+armed. Native LR1121 TX timeout remains required by the experimental harness.
+
+A 500 ms TX trial uses guard 750: normal native cleanup at 500 ms, independent
+reset at 750 ms if needed, Pico watchdog at approximately 1750 ms. Physical
+power loss and USB host/controller failures may still require intervention.
+
+Experimental TX profile
+-----------------------
+pico/tx/ is a separate opt-in build, version1.0.8-txopt5. It accepts 100..62000 ms
+absolute guards, with a 3 s serviced Pico watchdog. Servicing that watchdog never
+extends the independent alarm. USB disconnect trips reset. guardstatus additionally
+reports boot_phase, boot_block and boot_index from watchdog scratch 1..3. These
+values describe the last guarded reboot only when boot_recovery is true. See tx.md
+for native timeout constraints and the remaining startup failure. The receive
+profile's 2000 ms guard limit and watchdog behavior above are unchanged.

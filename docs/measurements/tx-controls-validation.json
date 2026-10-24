@@ -1,0 +1,197 @@
+{
+  "date": "2026-10-23",
+  "pico": "1.0.8-txopt3",
+  "abi": "0x46535432",
+  "payload_sha256": "1cfa582cfb01d06ac333e7c4170561319620059990201b1577b4b60c2af3e008",
+  "rate": 200000,
+  "external_rf_measurement": false,
+  "cases": [
+    {
+      "name": "hf2440-minus18",
+      "radio": {
+        "frequency_hz": 2440000000,
+        "center_word": 2558525441,
+        "pa": "hf",
+        "power_dbm_requested": -18,
+        "pa_config": [
+          2,
+          0,
+          4,
+          0
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": null
+      },
+      "standby": false,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.115,
+      "maximum_bank_write_ms": 4.585,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    },
+    {
+      "name": "hp433-minus9",
+      "radio": {
+        "frequency_hz": 433920000,
+        "center_word": 454998097,
+        "pa": "hp",
+        "power_dbm_requested": -9,
+        "pa_config": [
+          1,
+          1,
+          4,
+          7
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": [
+          108,
+          109
+        ]
+      },
+      "standby": false,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.165,
+      "maximum_bank_write_ms": 4.566,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    },
+    {
+      "name": "hp868-minus9",
+      "radio": {
+        "frequency_hz": 868350000,
+        "center_word": 910530969,
+        "pa": "hp",
+        "power_dbm_requested": -9,
+        "pa_config": [
+          1,
+          1,
+          4,
+          7
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": [
+          216,
+          218
+        ]
+      },
+      "standby": false,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.09,
+      "maximum_bank_write_ms": 4.668,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    },
+    {
+      "name": "hp868-zero",
+      "radio": {
+        "frequency_hz": 868350000,
+        "center_word": 910530969,
+        "pa": "hp",
+        "power_dbm_requested": 0,
+        "pa_config": [
+          1,
+          1,
+          4,
+          7
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": [
+          216,
+          218
+        ]
+      },
+      "standby": false,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.075,
+      "maximum_bank_write_ms": 4.586,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    },
+    {
+      "name": "lp868-minus17",
+      "radio": {
+        "frequency_hz": 868350000,
+        "center_word": 910530969,
+        "pa": "lp",
+        "power_dbm_requested": -17,
+        "pa_config": [
+          0,
+          0,
+          4,
+          0
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": [
+          216,
+          218
+        ]
+      },
+      "standby": false,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.15,
+      "maximum_bank_write_ms": 4.554,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    },
+    {
+      "name": "standby1200",
+      "radio": {
+        "frequency_hz": 1200000000,
+        "center_word": 1258291201,
+        "pa": "hp",
+        "power_dbm_requested": -9,
+        "pa_config": [
+          1,
+          1,
+          4,
+          7
+        ],
+        "ramp_us": 48,
+        "ramp_code": 2,
+        "image_calibration": null
+      },
+      "standby": true,
+      "count": 602112,
+      "completed": true,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "min_refill_margin_ms": 5.115,
+      "maximum_bank_write_ms": 4.572,
+      "usb_starved_polls": 0,
+      "radio_errors": "0x0000",
+      "guard_expired": false
+    }
+  ],
+  "restoration": {
+    "lr1121": "1.3",
+    "pico": "1.0.8",
+    "mode": 1,
+    "errors": "0x0000"
+  },
+  "offline_python_tests": 36
+}

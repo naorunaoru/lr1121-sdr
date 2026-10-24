@@ -55,6 +55,19 @@ bool parse_request(char *line, request_t *req, const char **error) {
     }
     if (count < 2 || !number(words[0], 1, UINT32_MAX, &req->id)) return false;
     const char *name = words[1];
+    if (!strcmp(name, "guardstatus")) {
+        if (count != 2) return false;
+        req->command = CMD_GUARD_STATUS;
+        return true;
+    }
+    if (!strcmp(name, "guard")) {
+        if (count != 3 || !number(words[2], 100, 2000, &req->timeout_ms)) {
+            *error = "guard_range_100_to_2000";
+            return false;
+        }
+        req->command = CMD_GUARD;
+        return true;
+    }
     if (!strcmp(name, "info") || !strcmp(name, "pins") || !strcmp(name, "bootsel")) {
         if (count != 2) return false;
         req->command = !strcmp(name, "info") ? CMD_INFO :

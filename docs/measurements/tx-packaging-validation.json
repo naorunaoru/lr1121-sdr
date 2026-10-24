@@ -1,0 +1,74 @@
+{
+  "date": "2026-10-23",
+  "arc_bytes": 4076,
+  "arc_sha256": "e1b4ab9bf01889eca1f50f64c8505821b7656aada740c2ad11dc05df114bd294",
+  "offline_validation": {
+    "pico_profiles": [
+      "receive",
+      "experimental-tx"
+    ],
+    "compiler_options": [
+      "-Wall",
+      "-Wextra",
+      "-Werror"
+    ],
+    "python_tests": 34,
+    "native_checks": [
+      "receive parser",
+      "TX parser",
+      "stream formats",
+      "frame decoder",
+      "retune reuse",
+      "waterfall regression"
+    ],
+    "note": "Full suite passed; host suite repeated after cleanup hardening."
+  },
+  "hardware": {
+    "standby": {
+      "completed": true,
+      "count": 602112,
+      "rate": 200000,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "cleanup": "radio reset",
+      "queue": {
+        "reason": "complete",
+        "received": 292,
+        "published": 292,
+        "max_write_us": 4469,
+        "min_published_lead_samples": 1049,
+        "starved_polls": 0
+      }
+    },
+    "preloaded": {
+      "completed": true,
+      "count": 602112,
+      "rate": 200000,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "cleanup": "radio reset"
+    },
+    "queued": {
+      "completed": true,
+      "count": 602112,
+      "rate": 200000,
+      "checksum_ok": true,
+      "trace_matches_source": true,
+      "cleanup": "radio reset",
+      "queue": {
+        "reason": "complete",
+        "received": 292,
+        "published": 292,
+        "max_write_us": 4455,
+        "min_published_lead_samples": 1054,
+        "starved_polls": 0
+      }
+    }
+  },
+  "restored": {
+    "lr1121": "1.3",
+    "pico": "1.0.8",
+    "chip_mode": 1,
+    "errors": "0x0000"
+  }
+}

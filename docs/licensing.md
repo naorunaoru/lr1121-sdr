@@ -21,6 +21,10 @@ when copied into an SDR++ source tree. The `sdrpp/patches/` directory is also GP
 patches to upstream SDR++ do not become MIT merely because MIT is the repository
 default. Upstream copyright and license notices remain applicable.
 
+The experimental TX profile (`pico/tx/`), ARC player and vector installer
+(`lr1121/tx/`), and host playback CLI (`host/tx.py`) are included in the MIT scope.
+They do not relicense the vendor firmware contained in generated application images.
+
 The MIT grant for independent components permits their reuse outside SDR++,
 subject to its notice requirements. It does not change the GPL obligations for
 distributing the SDR++ integration or a combined SDR++ application. Building with

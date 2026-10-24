@@ -12,6 +12,8 @@ cc=os.environ.get('CC','cc');cxx=os.environ.get('CXX','c++');module=ROOT/'sdrpp/
 for name,impl in [('test_protocol','protocol'),('test_stream_format','stream_format')]:
     run(cc,'-std=c11','-Wall','-Wextra','-Werror','-I'+str(ROOT/'pico/firmware'),ROOT/f'pico/tests/{name}.c',ROOT/f'pico/firmware/{impl}.c','-o',out/name)
     run(out/name)
+run(cc,'-std=c11','-Wall','-Wextra','-Werror',ROOT/'pico/tests/test_tx_protocol.c',ROOT/'pico/tx/protocol.c','-o',out/'test_tx_protocol')
+run(out/'test_tx_protocol')
 flags=['-std=c++17','-O2','-I'+str(source/'core/src'),'-I'+str(module/'src')]
 libs=['-framework','IOKit','-framework','CoreFoundation'] if platform.system()=='Darwin' else ['-pthread']
 for name in ('test_frames','test_retune','retune_probe'):
