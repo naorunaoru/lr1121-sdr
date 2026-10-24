@@ -18,7 +18,7 @@ class PlaybackTests(unittest.TestCase):
         for rate in (20000, 44100, 123456.7, 220000, 250000):
             t=tx.timing_settings(rate)
             self.assertLessEqual(abs(t['period_cycles']-32000000/rate), .5)
-        for rate in (True, 0, 19999, 250001, float('nan'), float('inf'), '200000'):
+        for rate in (True, 0, 19999, 400001, float('nan'), float('inf'), '200000'):
             with self.assertRaises(ValueError): tx.timing_settings(rate)
         # Requested duration <1 s; quantized hardware duration >1 s.
         with self.assertRaises(ValueError): tx.validate([0]*53248, 53250, 1000)
@@ -46,7 +46,7 @@ class PlaybackTests(unittest.TestCase):
     def test_invalid_modulation_never_opens_device(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(tx, 'Bridge') as bridge:
             out=Path(directory)/'trial'
-            for kwargs in ({'rate':float('nan')}, {'offset_shift':16},
+            for kwargs in ({'rate':float('nan')}, {'chunk_words':17}, {'probe_reads':True,'preloaded':True}, {'offset_shift':16},
                            {'deviation_hz':75000,'offset_shift':1},
                            {'deviation_hz':float('inf')}, {'offset_shift':15}):
                 args=dict(rate=200000,timeout_ms=100,out=out)
@@ -101,7 +101,7 @@ class PlaybackTests(unittest.TestCase):
     def test_limits_before_device_open(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(tx, 'Bridge') as bridge:
             out = Path(directory)/'trial'
-            for offsets, rate, timeout in [([0]*6144, 200000, 10), ([0]*6144, 300000, 100),
+            for offsets, rate, timeout in [([0]*6144, 200000, 10), ([0]*6144, 500000, 100),
                                             ([0]*6144, 200000, 60001), ([0]*4097, 200000, 100),
                                             ([32768]*6144, 200000, 100)]:
                 with self.assertRaises(ValueError):
@@ -130,13 +130,13 @@ class PlaybackTests(unittest.TestCase):
 
     def test_failed_binary_write_closes_without_ascii_reset(self):
         b = Mock()
-        b.info.return_value = {'firmware':'1.0.8-txopt5'}
+        b.info.return_value = {'firmware':'1.0.8-txopt6'}
         b.version.return_value = {'data':'22030103'}
         b.speed.return_value = {'spi_hz':15625000}
         b.request.return_value = {'id':10, 'ready':4104, 'ok':True}
         b.io.write.side_effect = OSError('USB lost')
         def memory(_b, address, count=1):
-            if address == 0x80f500: return [0x46535434]
+            if address == 0x80f500: return [0x46535435]
             if address == 0xf30058: return [tx.BASE_WORD]
             if address == 0x80d000: return tx.vectors()
             if address == 0x80c000: return list(struct.unpack('>2048I', tx.packed([0]*4096)))

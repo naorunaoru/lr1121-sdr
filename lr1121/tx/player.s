@@ -2,7 +2,7 @@
  * Transceiver 1.3, module-bound research player. Preserves original SDR prefix.
  * S=80f400. Two 4096-byte buffers at80c000/80d000, signed16 offsets.
  * Mode2=timer-only, mode3=native bounded TX + Timer0 frequency playback.
- * S+64=preloaded cyclic flag; +68=current ring record pointer.
+ * S+64=preloaded cyclic flag; +68=reserved (formerly log pointer).
  * S+72/76=phases at maximum consistent foreground observation;
  * +84=max complete foreground interruption span, +88=preceding IRQ sequence;
  * +120=multi-IRQ observations, +124=min no-IRQ observation span;
@@ -30,7 +30,7 @@ paired_start:
  cmp r1,3200000
  bhi p_start_return
  ld r1,[r9,12]
- cmp r1,128
+ cmp r1,80
  blo p_start_return
  ld r0,[r9]
  breq r0,2,p_started
@@ -48,7 +48,7 @@ p_started:
  ld r0,[r9,16]
 p_save_cb:
  st r0,[r9,16]
- mov r0,0x46535434
+ mov r0,0x46535435
  st r0,[r9,92]
  b p_init
 p_start_return:
@@ -107,7 +107,8 @@ p_kick:
  j [blink]
 /* Sampled ring records: index, entry phase, exit phase, RTC,
  * post-write observation phase, frequency, readback, end CONTROL0.
- * S+64=preloaded cyclic mode; S+68=current log pointer.
+ * Registers r0-r3/r9 only; blink and r4-r7 are untouched by the ISR.
+ * Trace exit phase is captured before restoring registers.
  * Timer0 is the only implemented ARC timer (TIMER_BUILD=10104).
  * Entry/exit modulo timestamps plus IP flag identify crossing a period.
  */
@@ -118,20 +119,18 @@ p_log:
  asl r3,r3,5
  add r3,r3,0x80e000
  st r0,[r3]
- ld r4,[sp,44]
- st r4,[r3,4]
- st r6,[r3,12]
- st r5,[r3,16]
- st r1,[r3,20]
- st r7,[r3,24]
- st r3,[r9,68]
  add r2,r2,1
  st r2,[r9,148]
- ld r7,[sp,28]
- ld r6,[sp,24]
- ld r5,[sp,20]
- ld r4,[sp,16]
- j [blink]
+ ld r2,[sp,44]
+ st r2,[r3,4]
+ lr r2,[0x21]
+ st r2,[r3,16]
+ st r1,[r3,20]
+ ld r2,[0xf30058]
+ st r2,[r3,24]
+ ld r2,[0xf04014]
+ st r2,[r3,12]
+ b p_irq_logged
 .org 0xa00
 p_irq_setup:
  clri r8
@@ -192,7 +191,7 @@ copy_vectors:
  lr r0,[0x18]
  st r0,[0x80f508]
  st 0,[gp,0x14]
- mov r0,0x46535434
+ mov r0,0x46535435
  st r0,[0x80f500]
  mov r0,0
  j [blink]
@@ -221,7 +220,7 @@ fault_handler:
  j [r0]
 p_underrun:
  st 4,[r9,28]
- j [blink]
+ b p_irq_stop
 .org 0xc00
 p_pair:
  ld r0,[r9,20]
@@ -257,28 +256,15 @@ p_buffer_ready:
  add r0,r0,1
  st r0,[r9,20]
  bmsk r2,r0,10
- cmp r2,2
- bls p_log_prepare
- j [blink]
+ cmp r2,0
+ beq p_log
+ b p_irq_return
 .org 0xc98
-/* Slow instrumentation path only. All 16-bit offsets are within the
- * session RF word bounds by construction; the Pico validates the center.
- */
-p_log_prepare:
- st r4,[sp,16]
- st r5,[sp,20]
- st r6,[sp,24]
- st r7,[sp,28]
- ld r6,[0xf04014]
- st r6,[r9,144]
- lr r5,[0x21]
- ld r7,[0xf30058]
- b p_log
 p_pair_done:
  ld r0,[0xf04014]
  st r0,[r9,144]
  st 2,[r9,28]
- j [blink]
+ b p_irq_stop
 .org 0xd00
 p_irq:
  st.aw r0,[sp,-48]
@@ -288,31 +274,26 @@ p_irq:
  st r2,[sp,8]
  st r3,[sp,12]
  st r9,[sp,36]
- st blink,[sp,40]
  mov r9,0x80f400
  mov r0,1
  sr r0,[0x22]
  ld r0,[r9,100]
  add r0,r0,1
  st r0,[r9,100]
- bl p_pair
- ld r0,[r9,28]
- breq r0,0,p_irq_return
+ b p_pair
+p_irq_logged:
+ lr r2,[0x22]
+ st r2,[r3,28]
+ lr r2,[0x21]
+ st r2,[r3,8]
+ b p_irq_return
+p_irq_stop:
  mov r0,0
  sr r0,[0x22]
 p_irq_return:
- ld blink,[sp,40]
  ld r9,[sp,36]
  ld r3,[sp,12]
  ld r2,[sp,8]
- ld r0,[0x80f444]
- breq r0,0,p_irq_tail
- lr r1,[0x22]
- st r1,[r0,28]
- lr r1,[0x21]
- st r1,[r0,8]
- st 0,[0x80f444]
-p_irq_tail:
  ld r1,[sp,4]
  ld.ab r0,[sp,48]
  rtie

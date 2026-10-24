@@ -4,7 +4,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 static inline bool tx_format_valid(uint32_t center, uint32_t shift, uint32_t period) {
-    if (shift < 1 || shift > 15 || period < 128 || period > 1600) return false;
+    if (shift < 1 || shift > 15 || period < 80 || period > 1600) return false;
     return (center & 1u) && center > (32768u << shift) &&
            center <= UINT32_MAX - (32767u << shift);
 }

@@ -6,17 +6,16 @@ one sample per frequency update; USB frame sizes and the two-bank LR ring are un
 
 ## Update rate
 
-`--rate HZ` accepts any finite requested rate in 20000–250000 updates/s. The host
+`--rate HZ` accepts any finite requested rate in 20000–400000 updates/s. The host
 selects `period = floor(32000000 / requested + 0.5)` and reports the actual nominal
 rate `32000000 / period`, the requested rate, period in clocks and rounding error
 in ppm. For example, 220000 selects 145 clocks and 220689.655172 updates/s.
 “Actual” here means the timer setting, not a calibrated measurement of RF updates;
-interrupt delay and clock error still apply. The 250 kHz timing limitations remain.
+interrupt delay and clock error still apply. See [ISR/SPI measurements](tx-isr-spi.md) for timing limits; accepted rates are not guaranteed streaming rates.
 
 Waveform generation, default timeout calculation and duration validation use that
-actual timer rate. The implementation accepts every integer period from 128 to
-1600, rather than a preset whitelist. Rates above the tested 250 kHz ceiling are
-still rejected. Modulation frequency and occupied RF bandwidth are separate from
+actual timer rate. The implementation accepts every integer period from 80 to
+1600, rather than a preset whitelist. The 400 kHz acceptance ceiling permits research/preloaded controls; streamed playback has a substantially lower measured limit. Modulation frequency and occupied RF bandwidth are separate from
 this update rate.
 
 ## Offset range and resolution
@@ -115,8 +114,8 @@ constraints still apply; see [TX reproduction](tx.md).
 ## Firmware compatibility
 
 Rebuild/reinstall the player and TX Pico profile together. The current player is
-4076 bytes, SHA-256 `7c2bba8afc67282700cb134fc170b744a016b736e039e204d196de0092924ce6`;
-Pico is `1.0.8-txopt5`, and the ABI marker is `0x46535434`. Host, vector verifier
+4076 bytes, SHA-256 `04d325b7ea603df41e08e88da8b5efdbf62a1c2a1fc27b5ccf33345453529e56`;
+Pico is `1.0.8-txopt6`, and the ABI marker is `0x46535435`. Host, vector verifier
 and Pico reject the preceding ABI. State offset +160 stores the shift; the previous
 40 state words keep their offsets. Both upload modes include the chosen shift in
 frequency expansion and checksum validation. Normal receiver firmware is unchanged.
@@ -124,7 +123,9 @@ frequency expansion and checksum validation. Normal receiver firmware is unchang
 Both hardware timeouts remain active. Changing modulation parameters starts a new
 session and does not extend an existing TX deadline.
 
-## Hardware validation
+## Earlier configurable-offset hardware validation
+
+The following results use txopt5, before the ISR changes. See [current measurements](tx-isr-spi.md).
 
 Six cases passed on 2026-10-23, all with matching checksums, final indices and retained
 source/register readbacks, no radio error flags, no USB-starved polls and unexpired

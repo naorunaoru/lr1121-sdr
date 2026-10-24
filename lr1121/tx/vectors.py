@@ -55,7 +55,7 @@ def verify(b):
     fw.mask(b, 0x80f500, 0)
     fw.mask(b, 0x8004ac, 0x95010)
     fw.mask(b, 0x8004bc, 2)
-    if fw.word(b, 0x80f500) != 0x46535434:
+    if fw.word(b, 0x80f500) != 0x46535435:
         raise RuntimeError('TX player ABI mismatch')
     actual = list(struct.unpack('>60I', fw.read_words(b, 0x80d000, 60)))
     if actual != vectors():

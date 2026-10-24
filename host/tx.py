@@ -58,8 +58,8 @@ ARC_CLOCK_HZ = 32000000
 
 
 def timing_settings(rate):
-    if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not math.isfinite(rate) or not 20000 <= rate <= 250000:
-        raise ValueError('Requested update rate must be finite and within 20000..250000 Hz')
+    if isinstance(rate, bool) or not isinstance(rate, (int, float)) or not math.isfinite(rate) or not 20000 <= rate <= 400000:
+        raise ValueError('Requested update rate must be finite and within 20000..400000 Hz')
     period = math.floor(ARC_CLOCK_HZ/rate + 0.5)
     actual = ARC_CLOCK_HZ/period
     return dict(rate_requested=rate, rate_actual=actual, period_cycles=period,
@@ -212,12 +212,18 @@ def configure(b, settings):
 def play(offsets, *, rate, timeout_ms, out, port=None, preloaded=False,
          standby=False, gap_us=2, poll_us=100, pause_block=None, pause_ms=0,
          frequency_hz=868350000, pa='auto', power_dbm=-9, ramp_us=48,
-         offset_shift=None, deviation_hz=None):
+         offset_shift=None, deviation_hz=None, chunk_words=64, probe_reads=False, adaptive_poll=False, spi_dma=False):
+    if chunk_words not in (16,32,64):
+        raise ValueError("Chunk words must be 16, 32 or 64")
+    if probe_reads and len(offsets) < 3*BLOCK:
+        raise ValueError("Polling probe needs at least three banks")
+    if probe_reads and preloaded:
+        raise ValueError("Use probe_reads or preloaded, not both")
     offset_shift = resolve_shift(offset_shift, deviation_hz)
     if deviation_hz is not None:
         offsets = scale_samples(offsets, deviation_hz, offset_shift)
     timing = timing_settings(rate)
-    validate(offsets, rate, timeout_ms, preloaded)
+    validate(offsets, rate, timeout_ms, preloaded or probe_reads)
     settings = radio_settings(frequency_hz, pa, power_dbm, ramp_us, offset_shift)
     center_word = settings['center_word']
     if not 2 <= gap_us <= 100 or not 20 <= poll_us <= 500:
@@ -225,8 +231,13 @@ def play(offsets, *, rate, timeout_ms, out, port=None, preloaded=False,
     if not 0 <= pause_ms <= 80 or (pause_block is not None and
             (preloaded or not 2 <= pause_block < len(offsets)//BLOCK)):
         raise ValueError('Invalid host pause')
+    # Prepare finite-session frames before arming either deadline. Avoid Python
+    # packing/checksum work competing with USB refill during playback.
+    prepared_frames = [] if preloaded else [
+        frame(block, offsets[block*BLOCK:(block+1)*BLOCK], center_word, offset_shift)
+        for block in range(2, len(offsets)//BLOCK)]
     out.mkdir(parents=True, exist_ok=False)
-    row = dict(rate=timing['rate_actual'], **timing, deviation_hz=deviation_hz,
+    row = dict(host_frames_prepared=len(prepared_frames), chunk_words=chunk_words, probe_reads=probe_reads, adaptive_poll=adaptive_poll, spi_dma=spi_dma, rate=timing['rate_actual'], **timing, deviation_hz=deviation_hz,
                input_mode='normalized_s16' if deviation_hz is not None else 'encoded_offsets', count=len(offsets), preloaded=preloaded, standby=standby,
                timeout_ms=timeout_ms, gap_us=gap_us, poll_us=poll_us,
                pause_block=pause_block, pause_ms=pause_ms, radio=settings, completed=False)
@@ -235,8 +246,8 @@ def play(offsets, *, rate, timeout_ms, out, port=None, preloaded=False,
     try:
         b = Bridge(port=port, log=out/'serial.jsonl')
         row['bridge'] = b.info()
-        if row['bridge']['firmware'] != '1.0.8-txopt5':
-            raise RuntimeError('Use the tested TX-only Pico profile (1.0.8-txopt5)')
+        if row['bridge']['firmware'] != '1.0.8-txopt6':
+            raise RuntimeError('Use the tested TX-only Pico profile (1.0.8-txopt6)')
         b.reset()
         if b.version()['data'] != '22030103':
             raise RuntimeError('Transceiver 1.3 required')
@@ -249,13 +260,13 @@ def play(offsets, *, rate, timeout_ms, out, port=None, preloaded=False,
         put(b, 0x80f500, [0])
         mask(b, 0x8004ac, 0x95010)
         mask(b, 0x8004bc, 2)
-        if read(b, 0x80f500)[0] != 0x46535434:
+        if read(b, 0x80f500)[0] != 0x46535435:
             raise RuntimeError('TX player ABI mismatch; install the configurable-offset player')
         if read(b, 0x80d000, 60) != vectors():
             raise RuntimeError('TX vectors not installed/verified')
         state = [0]*len(STATE_NAMES)
         state[:4] = [2 if standby else 3, round(timeout_ms*32768/1000), len(offsets), timing['period_cycles']]
-        state[16], state[23], state[27] = int(preloaded), 0x46535434, center_word
+        state[16], state[23], state[27] = int(preloaded or probe_reads), 0x46535435, center_word
         state[40] = offset_shift
         put(b, S, state)
         for block in range(2):
@@ -271,14 +282,14 @@ def play(offsets, *, rate, timeout_ms, out, port=None, preloaded=False,
             mask(b, 0x8004bc, 2)
         else:
             blocks = len(offsets)//BLOCK
-            ready = b.request(f'txqueue {blocks} 8 {gap_us} {poll_us}')
+            ready = b.request(f'txqueue {blocks} 8 {gap_us} {poll_us} {chunk_words} {int(probe_reads) | (2 if adaptive_poll else 0) | (4 if spi_dma else 0)}')
             if ready.get('ready') != 4104:
                 raise RuntimeError('Unexpected txqueue handshake')
             binary = True
             for block in range(2, blocks):
                 if block == pause_block:
                     time.sleep(pause_ms/1000)
-                raw = frame(block, offsets[block*BLOCK:(block+1)*BLOCK], center_word, offset_shift)
+                raw = prepared_frames[block-2]
                 if b.io.write(raw) != len(raw):
                     raise RuntimeError('Partial USB frame write')
             b.io.flush()
@@ -336,7 +347,7 @@ def main():
     sub = p.add_subparsers(dest='command', required=True)
     tone = sub.add_parser('tone', help='Generate a signed16 offset file without hardware access')
     tone.add_argument('output', type=Path)
-    tone.add_argument('--rate', type=float, default=200000, help='Requested updates/s, 20000..250000; rounded to the nearest ARC timer period')
+    tone.add_argument('--rate', type=float, default=200000, help='Requested updates/s, 20000..400000; rounded to the nearest ARC timer period')
     tone.add_argument('--samples', type=int, default=4096)
     tone.add_argument('--frequency', type=float, default=1513.671875)
     tone.add_argument('--deviation', type=float, default=38086)
@@ -345,7 +356,7 @@ def main():
     run.add_argument('input', type=Path)
     run.add_argument('--out', type=Path, required=True)
     run.add_argument('--port')
-    run.add_argument('--rate', type=float, default=200000, help='Requested updates/s, 20000..250000; rounded to the nearest ARC timer period')
+    run.add_argument('--rate', type=float, default=200000, help='Requested updates/s, 20000..400000; rounded to the nearest ARC timer period')
     run.add_argument('--offset-shift', type=int, help='PLL-word shift 1..15; defaults to 1 for raw input or auto-selects for normalized input')
     run.add_argument('--deviation-hz', '--offset-range-hz', type=float, help='Interpret input as normalized signed16 and scale its peaks to this deviation')
     run.add_argument('--frequency-hz', type=int, default=868350000)
@@ -356,6 +367,10 @@ def main():
     run.add_argument('--timeout-ms', type=int)
     run.add_argument('--preloaded', action='store_true')
     run.add_argument('--standby', action='store_true', help='Timer/RAM test without native TX')
+    run.add_argument('--chunk-words', type=int, choices=(16,32,64), default=64)
+    run.add_argument('--spi-dma', action='store_true', help='Use Pico DMA for queued SPI bank writes')
+    run.add_argument('--adaptive-poll', action='store_true', help='Predict bank release and poll near the boundary')
+    run.add_argument('--probe-reads', action='store_true', help='Cyclic preload with Pico SPI polling only; research control')
     run.add_argument('--gap-us', type=int, default=2)
     run.add_argument('--poll-us', type=int, default=100)
     run.add_argument('--tag-blocks', action='store_true', help='Add distinct small DC offsets to adjacent banks')
@@ -391,7 +406,8 @@ def main():
                       preloaded=a.preloaded, standby=a.standby, gap_us=a.gap_us,
                       poll_us=a.poll_us, pause_block=a.pause_block, pause_ms=a.pause_ms,
                       frequency_hz=a.frequency_hz, pa=a.pa, power_dbm=a.power_dbm, ramp_us=a.ramp_us,
-                      offset_shift=a.offset_shift, deviation_hz=a.deviation_hz)
+                      offset_shift=a.offset_shift, deviation_hz=a.deviation_hz,
+                      chunk_words=a.chunk_words, probe_reads=a.probe_reads, adaptive_poll=a.adaptive_poll, spi_dma=a.spi_dma)
         print(json.dumps({k:result[k] for k in ['completed', 'count', 'rate_requested', 'rate_actual', 'period_cycles', 'checksum_ok']}))
 
 

@@ -21,15 +21,16 @@ See [measurements and validation](docs/validation.md).
 
 ## Experimental TX
 
-An opt-in Pico profile and ARC player support frequency updates through 250 kHz,
+An opt-in Pico profile and ARC player provide experimental streamed frequency updates,
 with [external rate and deviation controls](docs/tx-controls.md).
-Three 12-second 250 kHz streams passed delivery checks with at least 1.916 ms
-refill margin; interrupt jitter remains. See [250 kHz measurements](docs/tx-250k.md).
+The shorter ISR improves 250 kHz refill margin; 275 kHz has passed long delivery tests, while 300 kHz is unreliable. See [ISR/SPI measurements](docs/tx-isr-spi.md). Preloaded playback can run faster; neither checksums nor accepted rate settings prove uniform timing.
 Three 15-second 200 kHz runs completed with correct checksums and no player underruns;
 minimum refill margin was 5 ms. Startup reliability, update jitter and spectral
 purity remain unresolved. Center frequency and LP/HP/HF PA power are configurable. The path is separate from
 SDR++ and without independent amplitude control. See [TX build/use](docs/tx.md)
 and [measurements, including the failed startup](docs/tx-measurements.md).
+
+See [GNU Radio workflows and live-interface design](docs/gnuradio.md) for complex RX captures and float-Hz TX conversion without building the SDR++ GUI.
 
 ## Layout
 

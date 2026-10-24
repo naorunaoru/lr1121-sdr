@@ -182,7 +182,7 @@ Device::Device(const std::string& path) {
         std::this_thread::sleep_for(std::chrono::milliseconds(150));tcflush(fd,TCIOFLUSH);
         send("\n");std::this_thread::sleep_for(std::chrono::milliseconds(100));tcflush(fd,TCIFLUSH);
         info=request("info");
-        if(info.value("bridge","")!="lr1121-spi" || (info.value("firmware","")!="1.0.5" && info.value("firmware","")!="1.0.6" && info.value("firmware","")!="1.0.7"))throw std::runtime_error("Requires LR1121 bridge firmware 1.0.5, 1.0.6 or 1.0.7");
+        if(info.value("bridge","")!="lr1121-spi" || (info.value("firmware","")!="1.0.5" && info.value("firmware","")!="1.0.6" && info.value("firmware","")!="1.0.7" && info.value("firmware","")!="1.0.8"))throw std::runtime_error("Requires LR1121 bridge firmware 1.0.5, 1.0.6, 1.0.7 or 1.0.8");
     } catch(...) {::close(fd);fd=-1;throw;}
 }
 Device::~Device() {

@@ -10,6 +10,7 @@
 #include "pico/bootrom.h"
 #include "pico/version.h"
 #include "hardware/spi.h"
+#include "hardware/dma.h"
 #include "hardware/watchdog.h"
 #include "hardware/sync.h"
 #include "tusb.h"
@@ -80,6 +81,8 @@ static void failure(uint32_t id, const char *error, const char *phase, bool sent
 static void (*tx_pump_hook)(void);
 static uint32_t tx_spi_guard_us=100,tx_poll_us=500;
 static uint32_t tx_center_word,tx_offset_shift;
+static uint32_t tx_last_wire_us,tx_last_pump_us;
+static int tx_dma_channel=-1,rx_dma_channel=-1;
 
 static bool ready(uint32_t timeout_ms) {
     if (guard_expired) return false;
@@ -100,12 +103,32 @@ static void transfer(const uint8_t *tx, uint8_t *rx, size_t n) {
     sleep_us(1);
     uint32_t previous_phase=watchdog_hw->scratch[1];
     if(tx_pump_hook) watchdog_hw->scratch[1]=20;
-    spi_write_read_blocking(RADIO_SPI, tx, rx, n);
+    uint64_t wire_start=tx_pump_hook ? time_us_64() : 0;
+    if(tx_pump_hook && (req.probe_mode&4) && n>64) {
+        dma_channel_config rc=dma_channel_get_default_config(rx_dma_channel);
+        channel_config_set_transfer_data_size(&rc,DMA_SIZE_8);
+        channel_config_set_read_increment(&rc,false);channel_config_set_write_increment(&rc,true);
+        channel_config_set_dreq(&rc,spi_get_dreq(RADIO_SPI,false));
+        dma_channel_config tc=dma_channel_get_default_config(tx_dma_channel);
+        channel_config_set_transfer_data_size(&tc,DMA_SIZE_8);
+        channel_config_set_read_increment(&tc,true);channel_config_set_write_increment(&tc,false);
+        channel_config_set_dreq(&tc,spi_get_dreq(RADIO_SPI,true));
+        dma_channel_configure(rx_dma_channel,&rc,rx,&spi_get_hw(RADIO_SPI)->dr,n,false);
+        dma_channel_configure(tx_dma_channel,&tc,&spi_get_hw(RADIO_SPI)->dr,tx,n,false);
+        dma_start_channel_mask((1u<<rx_dma_channel)|(1u<<tx_dma_channel));
+        dma_channel_wait_for_finish_blocking(rx_dma_channel);
+        dma_channel_wait_for_finish_blocking(tx_dma_channel);
+        while(spi_is_busy(RADIO_SPI)) tight_loop_contents();
+    } else spi_write_read_blocking(RADIO_SPI, tx, rx, n);
+    if(tx_pump_hook) tx_last_wire_us=(uint32_t)(time_us_64()-wire_start);
     if(tx_pump_hook) watchdog_hw->scratch[1]=previous_phase;
     gpio_put(PIN_CS, 1);
     // Give the radio time to assert BUSY before the following ready() check.
     sleep_us(tx_pump_hook ? tx_spi_guard_us : 100);
-    if (tx_pump_hook) tx_pump_hook();
+    if (tx_pump_hook) {
+        uint64_t pump_start=time_us_64();tx_pump_hook();
+        tx_last_pump_us=(uint32_t)(time_us_64()-pump_start);
+    }
 }
 
 static void finish(uint64_t start) {
@@ -198,7 +221,7 @@ static void tx_fill(void) {
     uint8_t cmd[262],rx[262];
     uint32_t marker,index,active,period,sum=0,block=req.iterations;
     uint64_t start=time_us_64();
-    if (!tx_read_word(0x80f45c,&marker)||marker!=0x46535434||
+    if (!tx_read_word(0x80f45c,&marker)||marker!=0x46535435||
         !tx_read_word(0x80f46c,&tx_center_word)||!tx_read_word(0x80f4a0,&tx_offset_shift)||
         !tx_read_word(0x80f414,&index)||!tx_read_word(0x80f450,&active)||
         !tx_read_word(0x80f40c,&period)||!tx_format_valid(tx_center_word,tx_offset_shift,period)||
@@ -322,10 +345,15 @@ static bool tx_mask_word(uint32_t address,uint32_t value) {
     transfer(cmd,rx,14);return ready(10);
 }
 static void tx_queue(void) {
-    uint32_t marker,index,active,period,count;
-    if(!guard_armed || !tx_read_word(0x80f45c,&marker)||marker!=0x46535434 ||
+    if((req.probe_mode&4) && tx_dma_channel<0) {
+        tx_dma_channel=dma_claim_unused_channel(true);
+        rx_dma_channel=dma_claim_unused_channel(true);
+    }
+    uint32_t marker,index,active,period,count,cyclic;
+    if(!guard_armed || !tx_read_word(0x80f45c,&marker)||marker!=0x46535435 ||
        !tx_read_word(0x80f46c,&tx_center_word)||!tx_read_word(0x80f4a0,&tx_offset_shift)||
        !tx_read_word(0x80f414,&index)||index || !tx_read_word(0x80f450,&active)||active ||
+       !tx_read_word(0x80f440,&cyclic)||((req.probe_mode&1) && !cyclic)||
        !tx_read_word(0x80f408,&count)||(count+2047)/2048!=req.iterations ||
        !tx_read_word(0x80f40c,&period)||!tx_format_valid(tx_center_word,tx_offset_shift,period)) {
         failure(req.id,"queue_state","txqueue",false);return;
@@ -345,6 +373,9 @@ static void tx_queue(void) {
     tx_pump_hook=queue_pump;
     uint64_t started=time_us_64();
     uint32_t minq=8,starved=0,maxwrite=0,minlead=UINT32_MAX,minpublished=UINT32_MAX;
+    uint32_t maxchunk=0,maxwire=0,maxbusy=0,chunk_bytes=req.chunk_words*4;
+    uint32_t maxclock=0,maxpump=0;
+    uint64_t clock_total=0,pump_total=0,busy_total=0;
     watchdog_hw->scratch[1]=2;
     if(!qerror && (!tx_mask_word(0x8004ac,0x94d10)||!tx_mask_word(0x8004bc,2))) qerror="start";
     uint8_t cmd[262],rx[262];
@@ -363,20 +394,41 @@ static void tx_queue(void) {
             if(qhead>qtail && index/2048==block-1) break;
             if(qhead==qtail) starved++;
             /* Poll locally and receive USB; no host round trip at the boundary. */
-            uint64_t wake=time_us_64()+tx_poll_us;
+            uint64_t delay=tx_poll_us;
+            if((req.probe_mode&2) && index<(block-1)*2048) {
+                uint64_t remaining=(uint64_t)((block-1)*2048-index)*period/32;
+                /* The sampled index precedes the active read and USB pumping.
+                 * Keep 500 us for that age and oscillator/timestamp error. */
+                if(remaining>500) delay=remaining-500;
+            }
+            uint64_t wake=time_us_64()+delay;
             while(time_us_64()<wake && !qerror) queue_pump();
         }
         if(qerror) break;
         uint32_t queued=qhead-qtail;
         if(qhead<qtotal-2 && queued<minq) minq=queued;
+        if(req.probe_mode&1) { qtail++; continue; }
         uint8_t *frame=txq[qtail%TXQ_DEPTH];uint32_t base=0x80c000+(block%2)*4096;
         watchdog_hw->scratch[1]=4;
         uint64_t wstart=time_us_64();cmd[0]=1;cmd[1]=5;
-        for(unsigned i=0;i<4096 && !qerror;i+=256) {
-            putbe32(cmd+2,base+i);memcpy(cmd+6,frame+8+i,256);
+        for(unsigned i=0;i<4096 && !qerror;i+=chunk_bytes) {
+            putbe32(cmd+2,base+i);memcpy(cmd+6,frame+8+i,chunk_bytes);
+            uint64_t cstart=time_us_64();
             if(!ready(10)) {qerror="write_busy";break;}
-            transfer(cmd,rx,sizeof(cmd));
+            uint64_t wire_start=time_us_64();
+            transfer(cmd,rx,chunk_bytes+6);
+            uint32_t wire_us=(uint32_t)(time_us_64()-wire_start);
+            if(tx_last_wire_us>maxclock)maxclock=tx_last_wire_us;
+            if(tx_last_pump_us>maxpump)maxpump=tx_last_pump_us;
+            clock_total+=tx_last_wire_us;pump_total+=tx_last_pump_us;
+            if(wire_us>maxwire) maxwire=wire_us;
+            uint64_t busy_start=time_us_64();
             if(!ready(10)) qerror="write_busy";
+            uint32_t busy_us=(uint32_t)(time_us_64()-busy_start);
+            if(busy_us>maxbusy) maxbusy=busy_us;
+            busy_total+=busy_us;
+            uint32_t chunk_us=(uint32_t)(time_us_64()-cstart);
+            if(chunk_us>maxchunk) maxchunk=chunk_us;
         }
         uint32_t us=(uint32_t)(time_us_64()-wstart);if(us>maxwrite)maxwrite=us;
         if(qerror) break;
@@ -416,13 +468,18 @@ static void tx_queue(void) {
            "\"failure_index\":%lu,\"failure_active\":%lu,\"peak_queue\":%lu,\"min_queue_before_write\":%lu,\"starved_polls\":%lu,\"max_write_us\":%lu,"
            "\"spi_guard_us\":%lu,\"poll_us\":%lu,\"min_published_lead_samples\":%lu,\"min_lead_samples\":%lu,\"prefill_us\":%llu,\"stream_us\":%llu,\"failure_state\":[",
            (unsigned long)req.id,qerror?"false":"true",qerror?qerror:"complete",
-           (unsigned long)qhead,(unsigned long)qtail,(unsigned long)failure_index,(unsigned long)failure_active,(unsigned long)qpeak,(unsigned long)minq,
+           (unsigned long)qhead,(unsigned long)((req.probe_mode&1)?0:qtail),(unsigned long)failure_index,(unsigned long)failure_active,(unsigned long)qpeak,(unsigned long)minq,
            (unsigned long)starved,(unsigned long)maxwrite,(unsigned long)tx_spi_guard_us,(unsigned long)tx_poll_us,(unsigned long)minpublished,(unsigned long)minlead,
            (unsigned long long)(started-begin),(unsigned long long)(time_us_64()-started));
     for(unsigned i=0;i<41;i++) printf("%s%lu",i?",":"",(unsigned long)failure_state[i]);
     printf("],\"failure_log\":[");
     for(unsigned i=0;i<64;i++) printf("%s%lu",i?",":"",(unsigned long)failure_log[i]);
-    printf("]}\n");
+    printf("],\"spi_clock_max_us\":%lu,\"usb_pump_max_us\":%lu,\"spi_clock_total_us\":%llu,\"usb_pump_total_us\":%llu,\"post_busy_total_us\":%llu,",
+           (unsigned long)maxclock,(unsigned long)maxpump,(unsigned long long)clock_total,
+           (unsigned long long)pump_total,(unsigned long long)busy_total);
+    printf("\"chunk_words\":%lu,\"probe_mode\":%lu,\"consumed_frames\":%lu,\"max_chunk_us\":%lu,\"max_transfer_us\":%lu,\"max_post_busy_us\":%lu}\n",
+           (unsigned long)req.chunk_words,(unsigned long)req.probe_mode,(unsigned long)qtail,(unsigned long)maxchunk,
+           (unsigned long)maxwire,(unsigned long)maxbusy);
 }
 
 static void run_request(void) {
@@ -470,7 +527,7 @@ static void run_request(void) {
         char serial[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1];
         pico_get_unique_board_id_string(serial, sizeof(serial));
         printf("{\"id\":%lu,\"ok\":true,\"bridge\":\"lr1121-spi\",\"protocol\":1,"
-               "\"firmware\":\"1.0.8-txopt5\",\"reset_guard\":1,\"packed_stream\":\"LIP2\",\"fifo_stream\":\"LIP3\",\"packed_radio_uid\":\"" LR1121_VERIFIED_UID "\",\"sdk\":\"%s\",\"serial\":\"%s\","
+               "\"firmware\":\"1.0.8-txopt6\",\"reset_guard\":1,\"packed_stream\":\"LIP2\",\"fifo_stream\":\"LIP3\",\"packed_radio_uid\":\"" LR1121_VERIFIED_UID "\",\"sdk\":\"%s\",\"serial\":\"%s\","
                "\"spi_hz\":%lu,\"max_bytes\":%u,\"spi_mode\":0,\"pins\":{"
                "\"sck\":%d,\"mosi\":%d,\"miso\":%d,\"cs\":%d,\"busy\":%d,"
                "\"reset\":%d,\"dio9\":%d}}\n",

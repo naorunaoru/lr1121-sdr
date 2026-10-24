@@ -13,10 +13,10 @@ The SDR++ module remains receive-only. Stop it before opening the bridge.
 
 ## Status
 
-The current build accepts requested rates from 20 to 250 kHz, rounded to a whole
+The current build accepts requested rates from 20 to 400 kHz for research, rounded to a whole
 ARC timer period, and selectable offset encoding scales. Use the matching
 TX player, Pico profile and host CLI together; the ABI marker changed to reject
-older players. The default remains 200 kHz. See the [250 kHz measurements](tx-250k.md).
+older players. The default remains 200 kHz. The accepted ceiling is not a streaming guarantee; see the [ISR/SPI measurements](tx-isr-spi.md) for tested delivery and timing limits.
 
 The optimized 200 kHz path completed three 15.012-second runs: 9,007,104 updates,
 matching checksums, no player underruns and no USB-starved polls. Two runs included
@@ -39,11 +39,11 @@ python tools/build_pico.py --tx --toolchain /path/to/arm-gnu-toolchain
 Outputs:
 
 - `build/lr1121-tx/player.bin`: 4076-byte player including the unchanged SDR prefix.
-- `build/pico-tx/lr1121_bridge.uf2`: TX-only Pico profile, version `1.0.8-txopt5`.
+- `build/pico-tx/lr1121_bridge.uf2`: TX-only Pico profile, version `1.0.8-txopt6`.
 - `build/lr1121/stream.bin`: ordinary receiver extension, built as a prerequisite.
 
 The player SHA-256 is
-`7c2bba8afc67282700cb134fc170b744a016b736e039e204d196de0092924ce6`, for the configurable-rate/offset revision. Earlier measurements use a
+`04d325b7ea603df41e08e88da8b5efdbf62a1c2a1fc27b5ccf33345453529e56`, for the sparse optimized ISR revision. Earlier measurements use a
 different payload hash; see the validation records. The build verifies the prefix, 4080-byte ceiling and
 CBC padding holes. `--tx` selects `pico/tx/`; the default selects
 `pico/firmware/` and still produces `build/pico/lr1121_bridge.uf2`. Both profiles
@@ -170,10 +170,10 @@ content. It can push full-scale input out of range; validation rejects that befo
 opening the device. Preloaded mode requires exact repetitions of the first 4096
 offsets, so it cannot be combined with bank tags. `--standby` exercises timer/RAM
 playback without calling native TX. Requested rates may be any finite value in
-20–250 kHz; the actual nominal rate is `32000000 / round(32000000 / requested)`; whole 2048-update banks are required, with 4096 minimum for preloaded and
+20–400 kHz (research ceiling); the actual nominal rate is `32000000 / round(32000000 / requested)`; whole 2048-update banks are required, with 4096 minimum for preloaded and
 6144 for queued playback. Maximum 3,200,000 updates and 60 s native timeout.
 
-The default native timeout is waveform duration plus 500 ms. The independent Pico
+The host prepares finite-session frames/checksums before arming playback, avoiding Python packing work during refills. The default native timeout is waveform duration plus 500 ms. The independent Pico
 alarm is native timeout plus 2000 ms and cannot be extended by a refill. A separate
 3 s watchdog detects a stalled Pico; servicing it does not extend the alarm.
 USB disconnect trips the radio reset guard. At completion the host verifies state,
@@ -191,11 +191,21 @@ no firmware installation and does not automatically restore the receiver profile
 ## Transport and implementation
 
 `txfill BLOCK CHECKSUM` accepts 4096 bytes after a ready response. `txqueue BLOCKS
-PREFILL [GAP_US POLL_US]` accepts 4104-byte frames: BE32 sequence, BE32 sum of expanded
+PREFILL [GAP_US POLL_US [CHUNK_WORDS OPTIONS]]` accepts 4104-byte frames: BE32 sequence, BE32 sum of expanded
 frequency words, then 1024 BE32 pairs with the earlier signed16 offset in the low
 half. Sequence starts at 2 after the host loads banks 0 and1. Queue depth is 8;
 the Pico writes sixteen 256-byte native RAM commands per bank and publishes the
 ready sequence last. The LR checks the sequence at each 2048-update boundary.
+
+`CHUNK_WORDS` is 16, 32 or 64 (default 64). OPTIONS is a bitmask:
+bit 0 polls while consuming cyclic dummy frames without writing/publishing banks;
+bit 1 predicts the next bank release and waits until about 500 us before it;
+bit 2 uses Pico DMA for queued SPI bank writes. Default OPTIONS=0.
+The host exposes these as `--probe-reads`, `--adaptive-poll`, `--spi-dma` and
+`--chunk-words`. They are research controls; shorter chunks and DMA have not
+improved the measured streaming ceiling. The probe requires cyclic input and
+at least three banks; its `published` counter is zero and refill margins are
+undefined (UINT32_MAX). `consumed_frames` counts frames removed from the USB queue.
 
 The four-argument queue defaults remain 100 µs post-CS guard/500 µs polling;
 `host/tx.py` requests 2/100. Bounds are 2–100 µs guard and 20–500 µs polling. BUSY
@@ -205,22 +215,21 @@ guards. No SPI overclock was introduced by this optimization.
 The player preserves synchronization, checksum/index updates and bank sequencing.
 State offset+108 holds the session center word and +160 holds the offset shift;
 both Pico upload/checksum paths and the ARC ISR expand offsets against them.
-The configurable shift adds one RAM read per update relative to the 250 kHz build. The diagnostic routine reports ABI marker `0x46535434`; the host
+The configurable shift adds one RAM read per update relative to the 250 kHz build. The diagnostic routine reports ABI marker `0x46535435`; the host
 and vector verifier reject an older player before starting playback.
-RTC reads, frequency readback and extra register saves occur only on sparse trace
-updates. The host and Pico validate center-word headroom, so every signed16 encoding can
+RTC and frequency readback occur only on sparse trace updates. The ISR touches only r0–r3/r9 and never modifies blink; it no longer saves r4–r7 or checks a pending log pointer on every update. State +68 is now reserved. The host and Pico validate center-word headroom, so every signed16 encoding can
 be expanded without overflow. Per-bank range/sequence/checksum checks remain active.
 
 Timing records contain index, entry phase, exit phase, RTC, post-write observation
 phase, requested word, readback and CONTROL0. The final RTC is sampled by the
 completion IRQ one period after the final update. Sparse bracket duration omits
-entry and the final return tail. The foreground observer instead measures complete
+entry, register restoration and the final return tail. This exit bracket changed relative to txopt5; do not directly compare the old and new bracket as full ISR duration. The foreground observer instead measures complete
 interruptions using two consistent IRQ-count/Timer0 snapshots separated by 8 NOPs;
 subtract its measured no-IRQ baseline. A multi-IRQ interval is not one ISR duration.
 Its unwrapping assumes timer expiries are accounted for; it cannot prove the
 absence of isolated coalesced expiries. See [measurements](tx-measurements.md).
 
-The trace is a 128-record ring, three records per 2048 updates. Check `host/tx.py`
+The trace is a 128-record ring, one record per 2048 updates. Check `host/tx.py`
 `STATE_NAMES` against `lr1121/tx/player.s` before interpreting legacy state offsets.
 
 ## Restore receive operation

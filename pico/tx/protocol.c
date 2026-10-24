@@ -37,7 +37,7 @@ static bool hex_bytes(const char *s, request_t *req, size_t minimum) {
 }
 
 bool parse_request(char *line, request_t *req, const char **error) {
-    char *words[6];
+    char *words[8];
     size_t count = 0;
     memset(req, 0, sizeof(*req));
     *error = "syntax";
@@ -48,7 +48,7 @@ bool parse_request(char *line, request_t *req, const char **error) {
     while (*p) {
         while (*p == ' ' || *p == '\t') ++p;
         if (!*p) break;
-        if (count == 6) return false;
+        if (count == 8) return false;
         words[count++] = p;
         while (*p && *p != ' ' && *p != '\t') ++p;
         if (*p) *p++ = '\0';
@@ -56,11 +56,15 @@ bool parse_request(char *line, request_t *req, const char **error) {
     if (count < 2 || !number(words[0], 1, UINT32_MAX, &req->id)) return false;
     const char *name = words[1];
     if (!strcmp(name, "txqueue")) {
-        if ((count != 4 && count != 6) || !number(words[2], 3, 1563, &req->iterations) ||
+        if ((count != 4 && count != 6 && count != 8) || !number(words[2], 3, 1563, &req->iterations) ||
             !number(words[3], 1, 8, &req->guard_us)) return false;
         req->pause_ms=100; req->sample_rate=500; // queue SPI gap/poll, in microseconds
-        if(count==6 && (!number(words[4],2,100,&req->pause_ms) ||
+        if(count>=6 && (!number(words[4],2,100,&req->pause_ms) ||
                        !number(words[5],20,500,&req->sample_rate))) return false;
+        req->chunk_words=64; req->probe_mode=0;
+        if(count==8 && (!number(words[6],16,64,&req->chunk_words) ||
+                       (req->chunk_words!=16 && req->chunk_words!=32 && req->chunk_words!=64) ||
+                       !number(words[7],0,7,&req->probe_mode))) return false;
         req->command = CMD_TXQUEUE;
         return true;
     }

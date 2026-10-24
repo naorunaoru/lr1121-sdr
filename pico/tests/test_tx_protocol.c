@@ -12,6 +12,17 @@ int main(void) {
  assert(parse("1 txqueue 3 1 100 20"));
  const char *bad[]={"1 txqueue 300 8 0 100","1 txqueue 300 8 1 100","1 txqueue 300 8 101 100","1 txqueue 300 8 2 19","1 txqueue 300 8 2 501","1 txqueue 300 8 2","1 txqueue 300 8 2 100 extra","1 txqueue 300 9 2 100","1 txqueue 1564 8 2 100","1 txqueue 300 8 -1 100","1 txqueue 300 8 4294967296 100"};
  for(unsigned i=0;i<sizeof(bad)/sizeof(bad[0]);i++) assert(!parse(bad[i]));
+ for(unsigned c=16;c<=64;c*=2) {
+  char command[80];snprintf(command,sizeof(command),"1 txqueue 300 8 2 100 %u 1",c);
+  assert(parse(command) && r.chunk_words==c && r.probe_mode==1);
+ }
+ assert(!parse("1 txqueue 300 8 2 100 17 0"));
+ assert(parse("1 txqueue 300 8 2 100 64 3") && r.probe_mode==3);
+ assert(parse("1 txqueue 300 8 2 100 64 7") && r.probe_mode==7);
+ assert(!parse("1 txqueue 300 8 2 100 64 8"));
+ assert(!parse("1 txqueue 300 8 2 100 64"));
+ assert(!parse("1 txqueue 300 8 2 100 64 0 extra"));
+ assert(tx_format_valid(910530969,1,80));
  assert(parse("1 guard 15800") && r.timeout_ms==15800);
  assert(!parse("1 guard 62001"));
  const uint32_t center=910530969;
@@ -19,7 +30,7 @@ int main(void) {
  assert(tx_format_valid(center,14,1600));
  assert(!tx_format_valid(center,15,128)); /* Full negative range crosses zero. */
  assert(!tx_format_valid(center,0,128) && !tx_format_valid(center,16,128));
- assert(!tx_format_valid(center,1,127) && !tx_format_valid(center,1,1601));
+ assert(!tx_format_valid(center,1,79) && !tx_format_valid(center,1,1601));
  assert(!tx_format_valid(center-1,1,128));
  for(uint32_t shift=1;shift<=14;shift++) {
   assert(tx_expand_offset(center,shift,-32768)==center-(32768u<<shift));

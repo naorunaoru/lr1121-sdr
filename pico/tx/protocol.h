@@ -24,6 +24,8 @@ typedef struct {
     uint32_t guard_us;
     uint32_t pause_ms;
     uint32_t sample_rate;
+    uint32_t chunk_words;
+    uint32_t probe_mode;
     size_t tx_len;
     size_t read_len;
     uint8_t tx[BRIDGE_MAX_BYTES];
